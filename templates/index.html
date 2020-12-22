@@ -1,0 +1,9 @@
+{{define "index"}}
+{{template "header"}}
+<h2>Index Page {{.Title}}</h2>
+<form method="post">
+<input type="text" name="key"></input>
+<button type="submit">Test</button>
+</form>
+{{template "footer"}}
+{{end}}

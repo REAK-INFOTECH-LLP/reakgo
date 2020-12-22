@@ -1,0 +1,27 @@
+{
+  "name": "reakgo",
+  "version": "1.0.1",
+  "description": "Simple and hackable framework for webapps on Go",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "watch": "onchange '*.go' -- go run server.go"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/REAK-INFOTECH-LLP/reakgo.git"
+  },
+  "keywords": [
+    "reakgo",
+    "framework"
+  ],
+  "author": "REAK INFOTECH LLP, Ashish Saxena",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/REAK-INFOTECH-LLP/reakgo/issues"
+  },
+  "homepage": "https://github.com/REAK-INFOTECH-LLP/reakgo#readme",
+  "dependencies": {
+    "onchange": "^7.1.0"
+  }
+}
