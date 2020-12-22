@@ -33,6 +33,7 @@ func init() {
 
 func main() {
     http.HandleFunc("/", handler)
+    http.HandleFunc("/assets", handler)
     log.Fatal(http.ListenAndServe(":4000", nil))
 }
 
