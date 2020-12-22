@@ -33,7 +33,8 @@ func init() {
 
 func main() {
     http.HandleFunc("/", handler)
-    http.HandleFunc("/assets", handler)
+    // Serve static assets
+    http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
     log.Fatal(http.ListenAndServe(":4000", nil))
 }
 
