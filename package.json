@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "watch": "onchange '*.go' -- go run server.go"
+    "watch": "onchange '*.go' -- go run server.go",
+    "build-css": "tailwindcss build templates/src/styles.css -o templates/css/styles.css"
   },
   "repository": {
     "type": "git",
@@ -22,6 +23,9 @@
   },
   "homepage": "https://github.com/REAK-INFOTECH-LLP/reakgo#readme",
   "dependencies": {
-    "onchange": "^7.1.0"
+    "onchange": "^7.1.0",
+    "autoprefixer": "^10.1.0",
+    "chart.js": "^2.9.4",
+    "tailwindcss": "^2.0.2"
   }
 }
