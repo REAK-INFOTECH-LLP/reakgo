@@ -1,11 +1,13 @@
 package utility
 
 import (
+    "os"
+    "fmt"
+    "log"
     "net/http"
     "html/template"
-    "database/sql"
     "github.com/gorilla/sessions"
-    "fmt"
+    "github.com/jmoiron/sqlx"
 )
 
 // Template Pool
@@ -13,7 +15,7 @@ var View *template.Template
 // Session Store
 var Store *sessions.CookieStore
 // DB Connections
-var Db *sql.DB
+var Db *sqlx.DB
 
 type Session struct {
     Key string
@@ -26,7 +28,7 @@ func RedirectTo(w http.ResponseWriter, r *http.Request) {
 }
 
 func SessionSet(w http.ResponseWriter, r *http.Request, data Session) {
-    session, _ := Store.Get(r, "session-name")
+    session, _ := Store.Get(r, os.Getenv("SESSION_NAME"))
     // Set some session values.
     session.Values[data.Key] = data.Value
     // Save it before we write to the response/return from the handler.
@@ -35,7 +37,7 @@ func SessionSet(w http.ResponseWriter, r *http.Request, data Session) {
 }
 
 func SessionGet(r *http.Request, key string) interface{} {
-    session, _ := Store.Get(r, "session-name")
+    session, _ := Store.Get(r, os.Getenv("SESSION_NAME"))
     // Set some session values.
     return session.Values[key]
 }
@@ -58,4 +60,37 @@ func CheckACL(w http.ResponseWriter, r *http.Request, minLevel int) bool {
         RedirectTo(w, r)
         return false
     }
+}
+
+func AddFlash(flavour string, message string, w http.ResponseWriter, r *http.Request){
+    session, err := Store.Get(r, "flash-session")
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+    }
+    flash := make(map[string]string)
+    flash["Flavour"] = flavour
+    flash["Message"] = message
+    session.AddFlash(flash, "message")
+    session.Save(r, w)
+}
+
+func viewFlash(w http.ResponseWriter, r *http.Request) interface{}{
+  session, err := Store.Get(r, "flash-session")
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+  }
+  fm := session.Flashes("message")
+  if fm == nil {
+    return nil
+  }
+  session.Save(r, w)
+  return fm
+}
+
+func RenderTemplate(w http.ResponseWriter, r *http.Request, template string, data interface{}){
+    tmplData := make(map[string]interface{})
+    tmplData["data"] = data
+    tmplData["flash"] = viewFlash(w, r)
+    View.ExecuteTemplate(w, template, tmplData)
+    log.Println(tmplData)
 }

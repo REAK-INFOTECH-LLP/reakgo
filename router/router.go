@@ -15,14 +15,11 @@ func Routes(w http.ResponseWriter, r *http.Request) {
 	case "", "index":
 		utility.CheckACL(w, r, 0)
 		controllers.BaseIndex(w, r)
-	case "teams":
-		controllers.Teams(w, r)
-	case "manage":
-		controllers.Manage(w, r)
-	case "stats":
-		controllers.Stats(w, r)
-	case "test":
-		utility.CheckACL(w, r, 2)
-		controllers.Test(w, r)
+	case "login":
+		utility.CheckACL(w, r, 0)
+		controllers.Login(w, r)
+	case "edit":
+		utility.CheckACL(w, r, 0)
+		controllers.Edit(w, r)
 	}
 }
