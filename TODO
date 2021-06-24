@@ -1,0 +1,17 @@
+//TODO
+
+* Flash Implementation
+        - Build utility function to manage flash messages in a flash buffer managed
+        through sessions.
+        - Build faux ExecuteTemplate function inside utility which injects flashes into the
+        data payload of the template and then call the relevant template.
+
+        - Injecting algo will require to be tested against Structs, Interfaces and maps to
+        make it a global integration
+
+* Better MOTD
+        - Have a better MOTD once the build has started
+
+* Struct Scanning
+        - Struct scanning needs to be improved to avoid mapping individual struct members against
+          addresses, should be a complete struct map to ease up the developers

@@ -25,8 +25,11 @@ type ProfileModel struct {
 
 func (profile ProfileModel) Fetch() (Profile, error) {
     // Locking down to single entry, no multi-user functionality for now
-    rows, err := utility.Db.Queryx("SELECT * FROM profile WHERE id = 1")
     var p Profile
+    rows, err := utility.Db.Queryx("SELECT * FROM profile WHERE id = 1")
+    if err != nil{
+        return p, err
+    }
     for rows.Next() {
         err = rows.StructScan(&p)
     }
