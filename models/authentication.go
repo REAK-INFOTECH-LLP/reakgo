@@ -25,12 +25,7 @@ type AuthenticationModel struct {
 func (auth AuthenticationModel) GetUserByEmail(email string) (Authentication, error) {
     var selectedRow Authentication
 
-    rows := utility.Db.QueryRow("SELECT * FROM authentication WHERE email = ?", email)
-    err := rows.Scan(&selectedRow.Id, &selectedRow.Email, &selectedRow.Password, &selectedRow.Token, &selectedRow.TokenTimestamp)
-    if err != nil {
-        log.Println("Couldn't lookup user with email : "+email)
-        log.Println(err)
-    }
+    err := utility.Db.Get(&selectedRow, "SELECT * FROM authentication WHERE email = ?", email)
 
     return selectedRow, err
 }

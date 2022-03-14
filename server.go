@@ -1,24 +1,28 @@
 package main
 
 import (
-    "net/http"
-    "html/template"
-    "path/filepath"
-    "log"
-    "os"
-    "strings"
-    "time"
-    
-    "reakgo/router"
-    "reakgo/utility"
-    
-    "github.com/gorilla/sessions"
-    "github.com/joho/godotenv"
-    _ "github.com/go-sql-driver/mysql"
-    "github.com/jmoiron/sqlx"
+	"html/template"
+	"log"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"reakgo/controllers"
+	"reakgo/router"
+	"reakgo/utility"
+
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/gorilla/sessions"
+	"github.com/jmoiron/sqlx"
+	"github.com/joho/godotenv"
+    "github.com/gorilla/mux"
 )
 
 func init() {
+    // Set log configuration
+    log.SetFlags(log.LstdFlags | log.Lshortfile)
     var err error
     err = godotenv.Load()
     if err != nil {
@@ -31,7 +35,12 @@ func init() {
         log.Println("Wowza !, We didn't find the DB or you forgot to setup the env variables")
         panic(err)
     }
-    utility.Store = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
+    utility.Store = sessions.NewFilesystemStore("",[]byte(os.Getenv("SESSION_KEY")))
+    utility.Store.Options = &sessions.Options{
+        Path: "/",
+        MaxAge: 60*15,
+        HttpOnly: true,
+    }
     utility.View = cacheTemplates()
     // See "Important settings" section.
     utility.Db.SetConnMaxLifetime(time.Minute * 3)
@@ -41,10 +50,16 @@ func init() {
 }
 
 func main() {
-    http.HandleFunc("/", handler)
+    //http.HandleFunc("/", handler)
     // Serve static assets
-    http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
-    log.Fatal(http.ListenAndServe(":"+os.Getenv("WEB_PORT"), nil))
+    //http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
+
+    router := mux.NewRouter()
+    router.HandleFunc("/", controllers.BaseIndex)
+    router.HandleFunc("/login", controllers.Login)
+    router.HandleFunc("/dashboard", controllers.Dashboard)
+
+    log.Fatal(http.ListenAndServe(":"+os.Getenv("WEB_PORT"), router))
 }
 
 func cacheTemplates() *template.Template {

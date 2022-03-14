@@ -2,8 +2,8 @@ package utility
 
 import (
     "os"
-    "fmt"
     "log"
+    //"log"
     "net/http"
     "html/template"
     "github.com/gorilla/sessions"
@@ -13,7 +13,7 @@ import (
 // Template Pool
 var View *template.Template
 // Session Store
-var Store *sessions.CookieStore
+var Store *sessions.FilesystemStore
 // DB Connections
 var Db *sqlx.DB
 
@@ -22,9 +22,8 @@ type Session struct {
     Value string
 }
 
-func RedirectTo(w http.ResponseWriter, r *http.Request) {
-    fmt.Println("Redirect")
-    http.Redirect(w, r, "https://google.com", 302)
+func RedirectTo(w http.ResponseWriter, r *http.Request, path string){
+    http.Redirect(w, r, os.Getenv("APP_URL")+"/"+path, http.StatusFound)
 }
 
 func SessionSet(w http.ResponseWriter, r *http.Request, data Session) {
@@ -33,7 +32,9 @@ func SessionSet(w http.ResponseWriter, r *http.Request, data Session) {
     session.Values[data.Key] = data.Value
     // Save it before we write to the response/return from the handler.
     err := session.Save(r, w)
-    fmt.Println(err)
+    if(err != nil){
+        log.Println(err)
+    }
 }
 
 func SessionGet(r *http.Request, key string) interface{} {
@@ -57,13 +58,13 @@ func CheckACL(w http.ResponseWriter, r *http.Request, minLevel int) bool {
     if(level >= minLevel){
         return true
     } else {
-        RedirectTo(w, r)
+        RedirectTo(w, r, "forbidden")
         return false
     }
 }
 
 func AddFlash(flavour string, message string, w http.ResponseWriter, r *http.Request){
-    session, err := Store.Get(r, "flash-session")
+    session, err := Store.Get(r, os.Getenv("SESSION_NAME"))
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
     }
@@ -75,7 +76,7 @@ func AddFlash(flavour string, message string, w http.ResponseWriter, r *http.Req
 }
 
 func viewFlash(w http.ResponseWriter, r *http.Request) interface{}{
-  session, err := Store.Get(r, "flash-session")
+  session, err := Store.Get(r, os.Getenv("SESSION_NAME"))
   if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
   }
@@ -92,5 +93,4 @@ func RenderTemplate(w http.ResponseWriter, r *http.Request, template string, dat
     tmplData["data"] = data
     tmplData["flash"] = viewFlash(w, r)
     View.ExecuteTemplate(w, template, tmplData)
-    log.Println(tmplData)
 }
