@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+    "encoding/gob"
 
 	"reakgo/router"
 	"reakgo/utility"
@@ -44,6 +45,8 @@ func init() {
     utility.Db.SetConnMaxLifetime(time.Minute * 3)
     utility.Db.SetMaxOpenConns(10)
     utility.Db.SetMaxIdleConns(10)
+
+    gob.Register(utility.Flash{})
 
 }
 

@@ -23,6 +23,11 @@ type Session struct {
     Value string
 }
 
+type Flash struct {
+    Type string
+    Message string
+}
+
 func RedirectTo(w http.ResponseWriter, r *http.Request, path string){
     http.Redirect(w, r, os.Getenv("APP_URL")+"/"+path, http.StatusFound)
 }
@@ -69,11 +74,18 @@ func AddFlash(flavour string, message string, w http.ResponseWriter, r *http.Req
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
     }
-    flash := make(map[string]string)
-    flash["Flavour"] = flavour
-    flash["Message"] = message
-    session.AddFlash("testing1", "message")
-    session.Save(r, w)
+    //flash := make(map[string]string)
+    //flash["Flavour"] = flavour
+    //flash["Message"] = message
+    flash := Flash {
+        Type: flavour,
+        Message: message,
+    }
+    session.AddFlash(flash, "message")
+    err = session.Save(r, w)
+    if (err != nil){
+        log.Println(err)
+    }
 }
 
 func viewFlash(w http.ResponseWriter, r *http.Request) interface{}{
@@ -90,14 +102,8 @@ func viewFlash(w http.ResponseWriter, r *http.Request) interface{}{
 }
 
 func RenderTemplate(w http.ResponseWriter, r *http.Request, template string, data interface{}){
-    session, err := Store.Get(r, os.Getenv("SESSION_NAME"))
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-    }
     tmplData := make(map[string]interface{})
     tmplData["data"] = data
     tmplData["flash"] = viewFlash(w, r)
-    tmplData["sessionData"] = session.Values["email"]
     View.ExecuteTemplate(w, template, tmplData)
-    log.Println(template)
 }
