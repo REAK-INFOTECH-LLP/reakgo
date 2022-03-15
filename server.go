@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"reakgo/controllers"
 	"reakgo/router"
 	"reakgo/utility"
 
@@ -17,7 +16,6 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
-    "github.com/gorilla/mux"
 )
 
 func init() {
@@ -50,16 +48,18 @@ func init() {
 }
 
 func main() {
-    //http.HandleFunc("/", handler)
+    http.HandleFunc("/", handler)
     // Serve static assets
-    //http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
-
+    http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
+    
+    /*
     router := mux.NewRouter()
     router.HandleFunc("/", controllers.BaseIndex)
     router.HandleFunc("/login", controllers.Login)
     router.HandleFunc("/dashboard", controllers.Dashboard)
+    */
 
-    log.Fatal(http.ListenAndServe(":"+os.Getenv("WEB_PORT"), router))
+    log.Fatal(http.ListenAndServe(":"+os.Getenv("WEB_PORT"), nil))
 }
 
 func cacheTemplates() *template.Template {

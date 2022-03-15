@@ -4,6 +4,7 @@ import (
     "os"
     "log"
     //"log"
+    //"fmt"
     "net/http"
     "html/template"
     "github.com/gorilla/sessions"
@@ -71,7 +72,7 @@ func AddFlash(flavour string, message string, w http.ResponseWriter, r *http.Req
     flash := make(map[string]string)
     flash["Flavour"] = flavour
     flash["Message"] = message
-    session.AddFlash(flash, "message")
+    session.AddFlash("testing1", "message")
     session.Save(r, w)
 }
 
@@ -89,8 +90,14 @@ func viewFlash(w http.ResponseWriter, r *http.Request) interface{}{
 }
 
 func RenderTemplate(w http.ResponseWriter, r *http.Request, template string, data interface{}){
+    session, err := Store.Get(r, os.Getenv("SESSION_NAME"))
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+    }
     tmplData := make(map[string]interface{})
     tmplData["data"] = data
     tmplData["flash"] = viewFlash(w, r)
+    tmplData["sessionData"] = session.Values["email"]
     View.ExecuteTemplate(w, template, tmplData)
+    log.Println(template)
 }
