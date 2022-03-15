@@ -5,6 +5,7 @@ import (
     "log"
     "reakgo/utility"
     "golang.org/x/crypto/bcrypt"
+	"github.com/gorilla/sessions"
 )
 
 func Login(w http.ResponseWriter, r *http.Request) {
@@ -40,6 +41,11 @@ func Login(w http.ResponseWriter, r *http.Request) {
                         utility.SessionSet(w, r, utility.Session{Key:"email", Value: row.Email})
                         utility.SessionSet(w, r, utility.Session{Key:"type", Value: "user"})
                         utility.AddFlash("success","Success !, Logged in.", w, r)
+                        if(r.FormValue("rememberMe") == "yes"){
+                            utility.Store.Options = &sessions.Options{
+                                MaxAge: 60*1,
+                            }
+                        }
                         utility.RedirectTo(w, r, "dashboard")
                         //utility.RenderTemplate(w, r, "login", "demo")
                     }

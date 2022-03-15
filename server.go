@@ -37,7 +37,7 @@ func init() {
     utility.Store = sessions.NewFilesystemStore("",[]byte(os.Getenv("SESSION_KEY")))
     utility.Store.Options = &sessions.Options{
         Path: "/",
-        MaxAge: 60*15,
+        MaxAge: 60*1,
         HttpOnly: true,
     }
     utility.View = cacheTemplates()
