@@ -22,5 +22,7 @@ func Routes(w http.ResponseWriter, r *http.Request) {
 		controllers.AddForm(w, r)
 	case "viewForm":
 		controllers.ViewForm(w, r)
+	case "twoFa":
+		controllers.RegisterTwoFa(w, r)
 	}
 }

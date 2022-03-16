@@ -1,11 +1,18 @@
 package controllers
 
 import (
-    "net/http"
-    "log"
+	"log"
+	"net/http"
+	"os"
+    "bytes"
+    "image/png"
+    b64 "encoding/base64"
+	
     "reakgo/utility"
-    "golang.org/x/crypto/bcrypt"
+
 	"github.com/gorilla/sessions"
+	"github.com/pquerna/otp/totp"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func Login(w http.ResponseWriter, r *http.Request) {
@@ -55,4 +62,33 @@ func Login(w http.ResponseWriter, r *http.Request) {
     } else {
         utility.RenderTemplate(w, r, "login", "demo")
     }
+}
+
+
+func TwoFaChallenge(w http.ResponseWriter, r *http.Request) {
+    key, _ := totp.Generate(totp.GenerateOpts{
+		Issuer: "Example.com",
+		AccountName: "alice@example.com",
+    })
+    log.Println(key)
+    log.Println(key.Secret())
+    utility.RenderTemplate(w, r, "twoFactorAuthCode", "demo")
+}
+
+
+func RegisterTwoFa(w http.ResponseWriter, r *http.Request){
+    log.Println("Register Two FA")
+    key, _ := totp.Generate(totp.GenerateOpts{
+		Issuer: os.Getenv("TOTP_ISSUER"),
+		AccountName: "alice@example.com",
+    })
+    log.Println(key)
+    log.Println(key.Secret())
+    img, _ := key.Image(400,400)
+
+    var buf bytes.Buffer
+    png.Encode(&buf, img)
+    buf = b64.StdEncoding.EncodeToString([]byte(buf))
+
+    utility.RenderTemplate(w, r, "twoFactorAuthCode", buf)
 }

@@ -8,5 +8,6 @@ require (
 	github.com/gorilla/sessions v1.2.1
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/joho/godotenv v1.4.0
+	github.com/pquerna/otp v1.3.0 // indirect
 	golang.org/x/crypto v0.0.0-20220313003712-b769efc7c000
 )

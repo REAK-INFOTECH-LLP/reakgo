@@ -18,6 +18,11 @@ type Authentication struct {
     TokenTimestamp int64
 }
 
+type TwoFactor struct {
+    UserId int32
+    Secret string
+}
+
 type AuthenticationModel struct {
     DB *sqlx.DB
 }
