@@ -88,7 +88,7 @@ func RegisterTwoFa(w http.ResponseWriter, r *http.Request){
 
     var buf bytes.Buffer
     png.Encode(&buf, img)
-    buf = b64.StdEncoding.EncodeToString([]byte(buf))
+    //buf = b64.StdEncoding.EncodeToString([]byte(buf))
 
     utility.RenderTemplate(w, r, "twoFactorAuthCode", buf)
 }
