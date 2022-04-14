@@ -6,7 +6,7 @@ import (
 	"os"
     "bytes"
     "image/png"
-    b64 "encoding/base64"
+//    b64 "encoding/base64"
 	
     "reakgo/utility"
 
