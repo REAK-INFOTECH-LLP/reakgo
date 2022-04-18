@@ -3,6 +3,8 @@ package router
 import (
 	"net/http"
 	"reakgo/controllers"
+	"reakgo/utility"
+
 	//"reakgo/utility"
 	"strings"
 )
@@ -13,16 +15,25 @@ func Routes(w http.ResponseWriter, r *http.Request) {
 	route := strings.Trim(r.URL.Path, "/")
 	switch route {
 	case "", "index":
+        utility.CheckACL(w, r, 0)
 		controllers.BaseIndex(w, r)
 	case "login":
+        utility.CheckACL(w, r, 0)
 		controllers.Login(w, r)
 	case "dashboard":
+        utility.CheckACL(w, r, 1)
 		controllers.Dashboard(w, r)
-	case "addForm":
+	case "addSimpleForm":
+        utility.CheckACL(w, r, 0)
 		controllers.AddForm(w, r)
-	case "viewForm":
+	case "viewSimpleForm":
+        utility.CheckACL(w, r, 0)
 		controllers.ViewForm(w, r)
-	case "twoFa":
+	case "register-2fa":
+        utility.CheckACL(w, r, 1)
 		controllers.RegisterTwoFa(w, r)
+	case "verify-2fa":
+        utility.CheckACL(w, r, 1)
+		controllers.VerifyTwoFa(w, r)
 	}
 }

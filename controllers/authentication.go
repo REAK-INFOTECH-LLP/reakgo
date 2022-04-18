@@ -1,14 +1,16 @@
 package controllers
 
 import (
+	"bytes"
+	b64 "encoding/base64"
+	"fmt"
+	"image/png"
 	"log"
 	"net/http"
 	"os"
-    "bytes"
-    "image/png"
-//    b64 "encoding/base64"
-	
-    "reakgo/utility"
+	"strconv"
+
+	"reakgo/utility"
 
 	"github.com/gorilla/sessions"
 	"github.com/pquerna/otp/totp"
@@ -45,6 +47,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
                         utility.RenderTemplate(w, r, "login", "demo")
                     } else {
                         // Password match has been a success
+                        utility.SessionSet(w, r, utility.Session{Key:"id", Value: row.Id})
                         utility.SessionSet(w, r, utility.Session{Key:"email", Value: row.Email})
                         utility.SessionSet(w, r, utility.Session{Key:"type", Value: "user"})
                         utility.AddFlash("success","Success !, Logged in.", w, r)
@@ -53,7 +56,14 @@ func Login(w http.ResponseWriter, r *http.Request) {
                                 MaxAge: 60*1,
                             }
                         }
-                        utility.RedirectTo(w, r, "dashboard")
+                        token := Db.authentication.CheckTwoFactorRegistration(row.Id)
+                        utility.SessionSet(w, r, utility.Session{Key:"2faSecret", Value: token})
+
+                        if(token != ""){
+                            utility.RedirectTo(w, r, "verify-2fa")
+                        } else {
+                            utility.RedirectTo(w, r, "dashboard")
+                        }
                         //utility.RenderTemplate(w, r, "login", "demo")
                     }
                 }
@@ -65,30 +75,62 @@ func Login(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func TwoFaChallenge(w http.ResponseWriter, r *http.Request) {
-    key, _ := totp.Generate(totp.GenerateOpts{
-		Issuer: "Example.com",
-		AccountName: "alice@example.com",
-    })
-    log.Println(key)
-    log.Println(key.Secret())
-    utility.RenderTemplate(w, r, "twoFactorAuthCode", "demo")
+func VerifyTwoFa(w http.ResponseWriter, r *http.Request) {
+    if(r.Method == "GET") {
+        utility.RenderTemplate(w, r, "verifyTwoFa", "demo")
+    } else if (r.Method == "POST") {
+        err := r.ParseForm()
+        if(err!=nil){
+            log.Println(err)
+        } else {
+            twoFaVerify := r.FormValue("twoFaVerify")
+            secret := fmt.Sprintf("%v", utility.SessionGet(r, "2faSecret")) 
+            if(totp.Validate(twoFaVerify, secret)){
+                utility.RedirectTo(w, r, "dashboard")
+            } else {
+                utility.RedirectTo(w, r, "login")
+            }
+        }
+    }
 }
 
 
 func RegisterTwoFa(w http.ResponseWriter, r *http.Request){
-    log.Println("Register Two FA")
-    key, _ := totp.Generate(totp.GenerateOpts{
-		Issuer: os.Getenv("TOTP_ISSUER"),
-		AccountName: "alice@example.com",
-    })
-    log.Println(key)
-    log.Println(key.Secret())
-    img, _ := key.Image(400,400)
+    
+    if(r.Method == "GET"){
+        email := utility.SessionGet(r, "email")
+        key, _ := totp.Generate(totp.GenerateOpts{
+            Issuer: os.Getenv("TOTP_ISSUER"),
+            AccountName: fmt.Sprintf("%v", email),
+        })
+        utility.SessionSet(w, r, utility.Session{Key:"totpSecret", Value: key.Secret()})
+        
+        img, _ := key.Image(400,400)
 
-    var buf bytes.Buffer
-    png.Encode(&buf, img)
-    //buf = b64.StdEncoding.EncodeToString([]byte(buf))
+        var buf bytes.Buffer
+        png.Encode(&buf, img)
 
-    utility.RenderTemplate(w, r, "twoFactorAuthCode", buf)
+        data := b64.StdEncoding.EncodeToString([]byte(buf.String()))
+        data = "data:image/png;base64,"+data
+
+        utility.RenderTemplate(w, r, "twoFactorRegister", data)
+    } else if (r.Method == "POST") {
+        err := r.ParseForm()
+        if (err != nil){
+
+        } else {
+            verifyToken := r.FormValue("challengeCode")
+            validationResult := totp.Validate(verifyToken, fmt.Sprintf("%v", utility.SessionGet(r, "totpSecret")))
+            if(validationResult){
+                secret := fmt.Sprintf("%v", utility.SessionGet(r, "totpSecret"))
+                userId := fmt.Sprintf("%v", utility.SessionGet(r, "id")) 
+                intUserId, _ := strconv.Atoi(userId)
+                Db.authentication.TwoFactorAuthAdd(secret, intUserId)
+                utility.RenderTemplate(w, r, "successTwoFactor", nil)
+            } else {
+                // Show Error Page
+                utility.RenderTemplate(w, r, "failureTwoFactor", nil)
+            }
+        }
+    }
 }

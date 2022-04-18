@@ -19,8 +19,8 @@ type Authentication struct {
 }
 
 type TwoFactor struct {
-    UserId int32
-    Secret string
+    UserId int32 `db:"userId"`
+    Secret string `db:"secret"`
 }
 
 type AuthenticationModel struct {
@@ -105,4 +105,19 @@ func (auth AuthenticationModel) ChangePassword(newPassword string, id int32) (bo
     } else {
         return false, err
     }
+}
+
+func (auth AuthenticationModel) TwoFactorAuthAdd(secret string, userId int) (bool, error) {
+    _, err := utility.Db.NamedExec("INSERT INTO twoFactor (userId, secret) VALUES(:id, :2faSecret) ON DUPLICATE KEY UPDATE secret=:2faSecret", map[string]interface{}{"2faSecret":secret, "id": userId})    
+   if (err != nil){
+        return false, err
+   } else {
+        return true, err
+   } 
+}
+
+func (auth AuthenticationModel) CheckTwoFactorRegistration(userId int32) (string) {
+    twoFactor := TwoFactor{}
+    utility.Db.Get(&twoFactor, "SELECT * FROM twoFactor WHERE userId = ?", userId)
+    return twoFactor.Secret
 }

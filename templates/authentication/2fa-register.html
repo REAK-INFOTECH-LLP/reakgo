@@ -1,0 +1,12 @@
+{{define "twoFactorRegister"}}
+<html>
+    <body>
+        {{$data := index . "data"}}
+        <img src="{{$data|safeURL}}" />
+        <form method="POST">
+            <input type="text" name="challengeCode" />
+            <button type="submit">Verify</button>
+        </form>
+    </body>
+</html>
+{{end}}

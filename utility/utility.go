@@ -20,7 +20,7 @@ var Db *sqlx.DB
 
 type Session struct {
     Key string
-    Value string
+    Value interface{}
 }
 
 type Flash struct {

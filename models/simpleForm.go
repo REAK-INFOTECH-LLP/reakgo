@@ -20,13 +20,13 @@ type FormAddViewModel struct {
 
 
 func (form FormAddViewModel) Add(name string, address string) {
-    utility.Db.MustExec("INSERT INTO formAddView (name, address) VALUES (?, ?)", name, address)
+    utility.Db.MustExec("INSERT INTO simpleForm (name, address) VALUES (?, ?)", name, address)
 }
 
 func (form FormAddViewModel) View () ([]FormAddView, error) {
     var resultSet []FormAddView
 
-    rows, err := utility.Db.Query("SELECT * FROM formAddView")
+    rows, err := utility.Db.Query("SELECT * FROM simpleForm")
     if (err != nil){
         log.Println(err)
     } else {

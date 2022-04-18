@@ -66,7 +66,24 @@ func main() {
 }
 
 func cacheTemplates() *template.Template {
+
+    funcMap := template.FuncMap{
+        // Only to be used for SAFE attributes, SAFE = Computer Generated and not USER DRIVEN
+        "attr":func(s string) template.HTMLAttr{
+            return template.HTMLAttr(s)
+        },
+        // Only to be used for SAFE HTML, SAFE = Computer Generated and not USER DRIVEN
+        "safe": func(s string) template.HTML {
+            return template.HTML(s)
+         },
+        // Only to be used for SAFE URLs, SAFE = Computer Generated and not USER DRIVEN
+         "safeURL": func(s string) template.URL {
+            return template.URL(s)
+         },
+    }
+
     templ := template.New("")
+    templ.Funcs(funcMap)
     err := filepath.Walk("./templates", func(path string, info os.FileInfo, err error) error {
         if strings.Contains(path, ".html") {
             _, err = templ.ParseFiles(path)

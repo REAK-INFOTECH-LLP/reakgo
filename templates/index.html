@@ -1,3 +1,4 @@
 {{define "index"}}
-    <h1>Homepage</h1>
+{{$data := index . "data"}}
+<h1>Homepage {{index $data 1}}</h1>
 {{end}}
