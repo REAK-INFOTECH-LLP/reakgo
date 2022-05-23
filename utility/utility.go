@@ -2,6 +2,7 @@ package utility
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 
@@ -70,18 +71,18 @@ func fetchSession(r *http.Request) map[interface{}]interface{} {
 	return session.Values
 }
 
-func CheckACL(w http.ResponseWriter, r *http.Request, minLevel int) bool {
-	userType := SessionGet(r, "type")
-	var level int = 0
-	switch userType {
-	case "user":
-		level = 1
-	case "admin":
-		level = 2
-	default:
-		level = 0
+// check value exist in array or not
+func stringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
 	}
-	if level >= minLevel {
+	return false
+}
+func CheckACL(w http.ResponseWriter, r *http.Request, useracl []string) bool {
+	userTypeSession := fmt.Sprintf("%v", SessionGet(r, "type"))
+	if stringInSlice(userTypeSession, useracl) {
 		return true
 	} else {
 		RedirectTo(w, r, "forbidden")
@@ -131,11 +132,15 @@ func RenderTemplate(w http.ResponseWriter, r *http.Request, template string, dat
 	tmplData := make(map[string]interface{})
 	tmplData["data"] = data
 	tmplData["flash"] = viewFlash(w, r)
-	// tmplData["session"] = fetchSession(r)
+	tmplData["session"] = fetchSession(r)
 	if IsCurlApiRequest(r) {
 		jsonresponce, _ := json.Marshal(tmplData)
 		w.Write([]byte(jsonresponce))
 	} else {
 		View.ExecuteTemplate(w, template, tmplData)
 	}
+}
+
+func IsCurrectAdminOrUser(w http.ResponseWriter, r *http.Request, typeOfUsr string) bool {
+	return true
 }
