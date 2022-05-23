@@ -68,11 +68,12 @@ func Login(w http.ResponseWriter, r *http.Request) {
 						}
 					}
 				}
+				log.Println(responce)
 			}
 		}
+		utility.RenderTemplate(w, r, "login", responce)
 	}
 	// only once call this function because repeate ui multiple time
-	utility.RenderTemplate(w, r, "login", responce)
 }
 
 func VerifyTwoFa(w http.ResponseWriter, r *http.Request) {

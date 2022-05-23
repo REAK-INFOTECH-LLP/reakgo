@@ -18,7 +18,7 @@ func Routes(w http.ResponseWriter, r *http.Request) {
 		utility.CheckACL(w, r, []string{"admin", "user"})
 		controllers.BaseIndex(w, r)
 	case "login":
-		utility.CheckACL(w, r, []string{"admin", "user"})
+		utility.CheckACL(w, r, []string{"admin", "user", "all"})
 		controllers.Login(w, r)
 	case "dashboard":
 		utility.CheckACL(w, r, []string{"admin", "user"})

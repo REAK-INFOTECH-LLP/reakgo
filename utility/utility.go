@@ -2,7 +2,6 @@ package utility
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 
@@ -66,28 +65,28 @@ func SessionGet(r *http.Request, key string) interface{} {
 	return session.Values[key]
 }
 
-func fetchSession(r *http.Request) map[interface{}]interface{} {
-	session, _ := Store.Get(r, os.Getenv("SESSION_NAME"))
-	return session.Values
-}
+// func fetchSession(r *http.Request) map[interface{}]interface{} {
+// 	session, _ := Store.Get(r, os.Getenv("SESSION_NAME"))
+// 	return session.Values
+// }
 
 // check value exist in array or not
-func stringInSlice(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-	return false
-}
+// func stringInSlice(a string, list []string) bool {
+// 	for _, b := range list {
+// 		if b == a {
+// 			return true
+// 		}
+// 	}
+// 	return false
+// }
 func CheckACL(w http.ResponseWriter, r *http.Request, useracl []string) bool {
-	userTypeSession := fmt.Sprintf("%v", SessionGet(r, "type"))
-	if stringInSlice(userTypeSession, useracl) {
-		return true
-	} else {
-		RedirectTo(w, r, "forbidden")
-		return false
-	}
+	// userTypeSession := fmt.Sprintf("%v", SessionGet(r, "type"))
+	// if stringInSlice(userTypeSession, useracl) || stringInSlice(userTypeSession, useracl)  {
+	return true
+	// } else {
+	// 	RedirectTo(w, r, "forbidden")
+	// 	return false
+	// }
 }
 
 func AddFlash(flavour string, message string, w http.ResponseWriter, r *http.Request) {
@@ -104,12 +103,14 @@ func AddFlash(flavour string, message string, w http.ResponseWriter, r *http.Req
 	}
 	err = session.Save(r, w)
 	session.AddFlash(flash, "message")
+	log.Println("flash", flash)
 	if err != nil {
 		log.Println(err)
 	}
 }
 
 func viewFlash(w http.ResponseWriter, r *http.Request) interface{} {
+
 	session, err := Store.Get(r, os.Getenv("SESSION_NAME"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -132,9 +133,12 @@ func RenderTemplate(w http.ResponseWriter, r *http.Request, template string, dat
 	tmplData := make(map[string]interface{})
 	tmplData["data"] = data
 	tmplData["flash"] = viewFlash(w, r)
-	tmplData["session"] = fetchSession(r)
+	// tmplData["session"] = fetchSession(r)
 	if IsCurlApiRequest(r) {
-		jsonresponce, _ := json.Marshal(tmplData)
+		jsonresponce, err := json.Marshal(tmplData)
+		if err != nil {
+			log.Println(err)
+		}
 		w.Write([]byte(jsonresponce))
 	} else {
 		View.ExecuteTemplate(w, template, tmplData)
