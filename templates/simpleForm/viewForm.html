@@ -1,0 +1,18 @@
+{{define "viewForm"}}
+<html>
+    <body>    
+        <table>
+            <tr>
+                <th>Name</th>
+                <th>Address</th>
+            </tr>
+            {{range $singleItem := .data}}            
+            <tr>
+                <td>{{$singleItem.Name}}</td>
+                <td>{{$singleItem.Address}}</td>
+            </tr>
+            {{end}}
+        </table>
+    </body>
+</html>
+{{end}}
