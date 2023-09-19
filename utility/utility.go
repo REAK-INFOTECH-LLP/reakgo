@@ -2,8 +2,10 @@ package utility
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"os"
+	"reflect"
 
 	//"log"
 	//"fmt"
@@ -113,39 +115,137 @@ func RenderTemplate(w http.ResponseWriter, r *http.Request, template string, dat
 	tmplData["session"] = session.Values["email"]
 	View.ExecuteTemplate(w, template, tmplData)
 }
-func createStructFromJSON(jsonData []byte) (map[string]interface{}, error) {
-	var jsonDataMap map[string]interface{}
-	result := make(map[string]interface{})
-	err := json.Unmarshal(jsonData, &jsonDataMap)
-	if err != nil {
-		log.Println(err)
-		return result, err
-	}
 
-	for key, value := range jsonDataMap {
-		result[key] = value
-	}
+func ParseDataFromRequest(r *http.Request) (map[string]interface{}, error) {
+	if os.Getenv("APP_IS") == "monolith" {
+		var jsonDataMap map[string]interface{}
+		result := make(map[string]interface{})
 
-	return result, err
+		// Read JSON data from the HTTP request body
+		decoder := json.NewDecoder(r.Body)
+		err := decoder.Decode(&jsonDataMap)
+		if err != nil {
+			return result, err
+		}
+
+		// Close the request body to prevent resource leaks
+		defer r.Body.Close()
+		// Iterate through the JSON values
+		for key, value := range jsonDataMap {
+			result[key] = value
+		}
+
+		return result, nil
+	} else if os.Getenv("APP_IS") == "microservice" {
+		formData := make(map[string]interface{})
+		err := r.ParseForm()
+		if err != nil {
+			return formData, err
+		}
+
+		// Iterate through the form values
+		for key, values := range r.Form {
+			// If there's only one value for the key, store it directly
+			if len(values) == 1 {
+				formData[key] = values[0]
+			} else {
+				// If there are multiple values, store them as a slice
+				formData[key] = values
+			}
+		}
+
+		return formData, nil
+	}
+	return nil, errors.New("The value of the environment variable APP_IS is invalid or Not set. It should be [monolith or microservice]. Please update the environment variable and try again.")
 }
-func createStructFromHTTPRequest(r *http.Request) (map[string]interface{}, error) {
-	var jsonDataMap map[string]interface{}
-	result := make(map[string]interface{})
 
-	// Read JSON data from the HTTP request body
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&jsonDataMap)
-	if err != nil {
-		log.Println(err)
-		return result, err
+func StrictParseDataFromRequest(r *http.Request, structure interface{}) error {
+	if os.Getenv("APP_IS") == "monolith" {
+		err := json.NewDecoder(r.Body).Decode(structure)
+		if err != nil {
+			return err
+		}
+		return err
+
+	} else if os.Getenv("APP_IS") == "microservice" {
+
+		err := r.ParseForm()
+		if err != nil {
+			return err
+		}
+
+		// Use reflection to set field values based on form data
+		structValue := reflect.ValueOf(structure)
+		if structValue.Kind() != reflect.Ptr || structValue.Elem().Kind() != reflect.Struct {
+			return errors.New("invalid structure, must be a pointer to a struct")
+		}
+		structElem := structValue.Elem()
+		structType := structElem.Type()
+		log.Println("structtype=", structType)
+		for key, values := range r.Form {
+			field := structElem.FieldByName(key)
+			if !field.IsValid() {
+				continue // Skip fields that don't exist in the structure
+			}
+
+			// Handle fields with different types (e.g., slice or single value)
+			if len(values) == 1 {
+				log.Println(reflect.ValueOf(values[0]), "value")
+				log.Println(field.Type(), "feild")
+				log.Println(reflect.ValueOf(values[0]).Type(), "type")
+				value := reflect.ValueOf(values[0])
+				if value.Type().ConvertibleTo(field.Type()) {
+					field.Set(value.Convert(field.Type()))
+				}
+			} else {
+				// Handle fields with multiple values as a slice (if field is a slice)
+				if field.Kind() == reflect.Slice {
+					sliceType := field.Type().Elem()
+					slice := reflect.MakeSlice(field.Type(), len(values), len(values))
+
+					for i, v := range values {
+						elemValue := reflect.ValueOf(v)
+						if elemValue.Type().ConvertibleTo(sliceType) {
+							slice.Index(i).Set(elemValue.Convert(sliceType))
+						}
+					}
+
+					field.Set(slice)
+				}
+			}
+		}
+		return err
 	}
-
-	// Close the request body to prevent resource leaks
-	defer r.Body.Close()
-
-	for key, value := range jsonDataMap {
-		result[key] = value
-	}
-
-	return result, err
+	return errors.New("The value of the environment variable APP_IS is invalid or Not set. It should be [monolith or microservice]. Please update the environment variable and try again.")
 }
+
+// func StrictParseDataFromRequest(r *http.Request, structure struct{}) (struct{}, error) {
+// 	if os.Getenv("APP_IS") == "monolith" {
+// 		err := json.NewDecoder(r.Body).Decode(&structure)
+// 		if err != nil {
+// 			return structure, err
+// 		}
+// 		return structure, err
+
+// 	} else if os.Getenv("APP_IS") == "microservice" {
+// 		formData := make(map[string]interface{})
+// 		err := r.ParseForm()
+// 		if err != nil {
+// 			return structure, err
+// 		}
+
+// 		// Iterate through the form values
+// 		for key, values := range r.Form {
+// 			// If there's only one value for the key, store it directly
+// 			if len(values) == 1 {
+// 				formData[key] = values[0]
+// 			} else {
+// 				// If there are multiple values, store them as a slice
+// 				formData[key] = values
+// 			}
+// 		}
+
+// 		return structure, nil
+// 	}
+// 	return nil, errors.New("The value of the environment variable APP_IS is invalid or Not set. It should be [monolith or microservice]. Please update the environment variable and try again.")
+// }
