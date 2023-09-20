@@ -8,7 +8,6 @@ import (
 )
 
 func AddForm(w http.ResponseWriter, r *http.Request) {
-	model := models.FormAddView{}
 	if r.Method == "POST" {
 		err := r.ParseForm()
 		if err != nil {
@@ -19,14 +18,14 @@ func AddForm(w http.ResponseWriter, r *http.Request) {
 			address := r.FormValue("address")
 
 			log.Println(name, address)
-			model.Add(name, address)
+			models.FormAddView{}.Add(name, address)
 		}
 	}
 	utility.RenderTemplate(w, r, "addForm", nil)
 }
 
 func ViewForm(w http.ResponseWriter, r *http.Request) {
-	result, err := models.FormAddView.View()
+	result, err := models.FormAddView{}.View()
 	if err != nil {
 		log.Println(err)
 	}
