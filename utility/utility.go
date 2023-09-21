@@ -3,6 +3,7 @@ package utility
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"reflect"
@@ -117,7 +118,7 @@ func RenderTemplate(w http.ResponseWriter, r *http.Request, template string, dat
 	View.ExecuteTemplate(w, template, tmplData)
 }
 
-func ParseDataFromPostFormRequest(r *http.Request) (map[string]interface{}, error) {
+func ParseDataFromPostRequestToMap(r *http.Request) (map[string]interface{}, error) {
 	formData := make(map[string]interface{})
 	err := r.ParseForm()
 	if err != nil {
@@ -138,7 +139,7 @@ func ParseDataFromPostFormRequest(r *http.Request) (map[string]interface{}, erro
 	return formData, nil
 }
 
-func ParseDataFromJson(r *http.Request) (map[string]interface{}, error) {
+func ParseDataFromJsonToMap(r *http.Request) (map[string]interface{}, error) {
 	var jsonDataMap map[string]interface{}
 	result := make(map[string]interface{})
 
@@ -168,7 +169,7 @@ func StrictParseDataFromJson(r *http.Request, structure interface{}) error {
 
 }
 
-func StrictParseDataFromPostFormRequest(r *http.Request, structure interface{}) error {
+func StrictParseDataFromPostRequest(r *http.Request, structure interface{}) error {
 	err := r.ParseForm()
 	if err != nil {
 		return err
@@ -176,7 +177,7 @@ func StrictParseDataFromPostFormRequest(r *http.Request, structure interface{}) 
 	// Use reflection to set field values based on form data
 	structValue := reflect.ValueOf(structure)
 	if structValue.Kind() != reflect.Ptr || structValue.Elem().Kind() != reflect.Struct {
-		return errors.New("invalid structure, must be a pointer to a struct")
+		return errors.New("invalid argument: 'interface{}' must be a pointer to a struct")
 	}
 	structElem := structValue.Elem()
 	for key, values := range r.Form {
@@ -193,49 +194,49 @@ func StrictParseDataFromPostFormRequest(r *http.Request, structure interface{}) 
 			case reflect.Int:
 				intValue, err := strconv.Atoi(value)
 				if err != nil {
-					return err
+					return fmt.Errorf("Error in converting string to int: %v", err)
 				}
 				field.SetInt(int64(intValue))
 			case reflect.Int8:
 				int8Value, err := strconv.ParseInt(value, 10, 8)
 				if err != nil {
-					return err
+					return fmt.Errorf("Error in converting string to int8: %v", err)
 				}
 				field.SetInt(int64(int8(int8Value)))
 			case reflect.Int16:
 				int16Value, err := strconv.ParseInt(value, 10, 16)
 				if err != nil {
-					return err
+					return fmt.Errorf("Error in converting string to int16: %v", err)
 				}
 				field.SetInt(int64(int16(int16Value)))
 			case reflect.Int32:
 				int32Value, err := strconv.ParseInt(value, 10, 32)
 				if err != nil {
-					return err
+					return fmt.Errorf("Error in converting string to int32: %v", err)
 				}
 				field.SetInt(int64(int32(int32Value)))
 			case reflect.Int64:
 				int64Value, err := strconv.ParseInt(value, 10, 64)
 				if err != nil {
-					return err
+					return fmt.Errorf("Error in converting string to int64: %v", err)
 				}
 				field.SetInt(int64Value)
 			case reflect.Float32:
 				float32Value, err := strconv.ParseFloat(value, 32)
 				if err != nil {
-					return err
+					return fmt.Errorf("Error in converting string to float32: %v", err)
 				}
 				field.SetFloat(float64(float32(float32Value)))
 			case reflect.Float64:
 				float64Value, err := strconv.ParseFloat(value, 64)
 				if err != nil {
-					return err
+					return fmt.Errorf("Error in converting string to float64: %v", err)
 				}
 				field.SetFloat(float64(float64Value))
 			case reflect.Bool:
 				boolValue, err := strconv.ParseBool(value)
 				if err != nil {
-					return err
+					return fmt.Errorf("Error in converting string to bool: %v", err)
 				}
 				field.SetBool(boolValue)
 			case reflect.String:
