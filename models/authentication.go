@@ -13,7 +13,7 @@ type Authentication struct {
 	Email          string
 	Password       string
 	Token          string
-	TokenTimestamp int64
+	TokenTimestamp int64 `db:"tokenTimestamp"`
 }
 
 type TwoFactor struct {

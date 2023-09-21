@@ -39,6 +39,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 				row, err := models.Authentication{}.GetUserByEmail(email)
 				if err != nil {
 					// In case of MYSQL issues or no results are returned
+					log.Println(err)
 					utility.AddFlash("error", "Credentials didn't match, Please try again.", w, r)
 					utility.RenderTemplate(w, r, "login", "demo")
 				} else {
