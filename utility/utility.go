@@ -117,6 +117,14 @@ func RenderTemplate(w http.ResponseWriter, r *http.Request, template string, dat
 	View.ExecuteTemplate(w, template, tmplData)
 }
 
+type MyStruct struct {
+	Id          int64  `json:"id" db:"id" primarykey:"true" `
+	Name        string `json:"name" db:"name" `
+	Age         int    `json:"age" db:"age"`
+	Email       string `json:"email" db:"email"`
+	PhoneNumber int64  `json:"phone_number" db:"phone_number"`
+}
+
 //structure variable is having the &struct.please pass the pointer of the structure not the variable
 func FindFirst(tableName string, structure interface{}) error {
 	primaryKeyField, err := PrimaryKeyIdentifier(structure)
@@ -142,57 +150,48 @@ func FindLast(tableName string, structure interface{}) error {
 }
 
 //data varibale need to have the three compulsory keys (tablename,columnname,columnvalue),structure variable is having the &[]struct
-// func Find(data map[string]interface{}, structure interface{}) error {
-// 	// Check if the required keys exist in the 'data' map.
-// 	tableName, tableNameExists := data["tablename"].(string)
-// 	columnName, columnNameExists := data["columnname"].(string)
-// 	columnValue, columnValueExists := data["columnvalue"]
-// 	sortColumn, sortColumnExists := data["sortcolumn"].(string)
-// 	sortValue, sortValueExists := data["sortvalue"].(string)
+func Find(data map[string]interface{}, structure interface{}) error {
+	// Check if the required keys exist in the 'data' map.
+	tableName, tableNameExists := data["tablename"].(string)
+	columnName, columnNameExists := data["columnname"].(string)
+	columnValue, columnValueExists := data["columnvalue"]
+	sortColumn, sortColumnExists := data["sortcolumn"].(string)
+	sortValue, sortValueExists := data["sortvalue"].(string)
 
-// 	// Check if the required keys are missing and handle the error condition.
-// 	if !tableNameExists || !columnNameExists || !columnValueExists {
-// 		return errors.New("missing required keys in map[string]interface{} any of this tablename,columnname,columnvalue")
-// 	}
-// 	if !sortColumnExists {
-// 		// Assuming structut is a pointer to a slice of structs.
-// 		sliceValue := reflect.ValueOf(structure).Elem()
-// 		log.Println(reflect.ValueOf(structure).Elem().Type())
-// 		// Call the PrimaryKeyIdentifier function with the first element.
-// 		primaryKeyField, err := PrimaryKeyIdentifier(controllers.MyStruct{})
-// 		if err != nil {
-// 			return err
-// 		}
-// 		log.Println(primaryKeyField)
-// 		// Check if the slice is not empty.
-// 		if sliceValue.Len() > 0 {
-// 			// Get the first element from the slice.
-// 			// firstElement := sliceValue.Index(0).Addr().Interface()
+	// Check if the required keys are missing and handle the error condition.
+	if !tableNameExists || !columnNameExists || !columnValueExists {
+		return errors.New("missing required keys in map[string]interface{} any of this tablename,columnname,columnvalue")
+	}
 
-// 			// Call the PrimaryKeyIdentifier function with the first element.
-// 			primaryKeyField, err := PrimaryKeyIdentifier(controllers.MyStruct{})
-// 			if err != nil {
-// 				return err
-// 			}
-// 			log.Println(primaryKeyField)
-// 			sortColumn = primaryKeyField
-// 		}
-// 	}
-// 	// 	primaryKeyField, err := PrimaryKeyIdentifier(structure)
-// 	// 	if err != nil {
-// 	// 		return err
-// 	// 	}
-// 	// 	sortColumn = primaryKeyField
-// 	// }
-// 	if !sortValueExists {
-// 		sortValue = "ASC"
-// 	}
-// 	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = ? ORDER BY %s %s ;", tableName, columnName, sortColumn, sortValue)
-// 	log.Println(query)
-// 	// Execute the query and scan the results into the provided structure slice.
-// 	err := Db.Select(structure, query, columnValue)
-// 	return err
-// }
+	// Ensure that 'structure' is a pointer to a slice of structs.
+	structureValue := reflect.ValueOf(structure)
+	if structureValue.Kind() != reflect.Ptr || structureValue.Elem().Kind() != reflect.Slice {
+		return errors.New("interface{} must be a pointer to a slice of structs")
+	}
+
+	if !sortColumnExists {
+		// Assuming structure is a pointer to a slice of structs.
+		valueType := structureValue.Elem().Type().Elem()
+		emptyStruct := reflect.New(valueType).Interface()
+		// Call the PrimaryKeyIdentifier function with the first element.
+		primaryKeyField, err := PrimaryKeyIdentifier(emptyStruct)
+		if err != nil {
+			return err
+		} else {
+			sortColumn = primaryKeyField
+		}
+	}
+
+	if !sortValueExists {
+		sortValue = "ASC"
+	}
+
+	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = ? ORDER BY %s %s ;", tableName, columnName, sortColumn, sortValue)
+
+	// Execute the query and scan the results into the provided structure slice.
+	err := Db.Select(structure, query, columnValue)
+	return err
+}
 
 //provide the tablenName and the primarykey which is id.
 func Delete(data map[string]interface{}) (bool, error) {
