@@ -1,6 +1,7 @@
 package utility
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -118,38 +119,99 @@ func RenderTemplate(w http.ResponseWriter, r *http.Request, template string, dat
 
 //structure variable is having the &struct.please pass the pointer of the structure not the variable
 func FindFirst(tableName string, structure interface{}) error {
-	query := fmt.Sprintf("SELECT * FROM %s ORDER BY id LIMIT 1", tableName)
-	err := Db.Get(structure, query)
-	return err
+	primaryKeyField, err := PrimaryKeyIdentifier(structure)
+	if err != nil {
+		return err
+	}
+	// Build the query using the determined primary key field.
+	query := fmt.Sprintf("SELECT * FROM %s ORDER BY %s LIMIT 1", tableName, primaryKeyField)
+	// Execute the query and scan the result into the provided structure.
+	errFromDb := Db.Get(structure, query)
+	return errFromDb
 }
 
 //structure variable is having the &struct.please pass the pointer of the structure not the variable
 func FindLast(tableName string, structure interface{}) error {
-	query := fmt.Sprintf("SELECT * FROM %s ORDER BY id DESC LIMIT 1", tableName)
-	err := Db.Get(structure, query)
-	return err
+	primaryKeyField, err := PrimaryKeyIdentifier(structure)
+	if err != nil {
+		return err
+	}
+	query := fmt.Sprintf("SELECT * FROM %s ORDER BY  %s DESC LIMIT 1", tableName, primaryKeyField)
+	errFromDb := Db.Get(structure, query)
+	return errFromDb
 }
 
-//structure variable is having the &[]struct
-func Find(tableName string, columnName string, columnValue interface{}, structure interface{}) error {
-	query := fmt.Sprintf("SELECT * FROM %s WHERE %s= ?", tableName, columnName)
-	// Execute the query and scan the results into the provided structure slice.
-	err := Db.Select(structure, query, columnValue)
-	return err
-}
+//data varibale need to have the three compulsory keys (tablename,columnname,columnvalue),structure variable is having the &[]struct
+// func Find(data map[string]interface{}, structure interface{}) error {
+// 	// Check if the required keys exist in the 'data' map.
+// 	tableName, tableNameExists := data["tablename"].(string)
+// 	columnName, columnNameExists := data["columnname"].(string)
+// 	columnValue, columnValueExists := data["columnvalue"]
+// 	sortColumn, sortColumnExists := data["sortcolumn"].(string)
+// 	sortValue, sortValueExists := data["sortvalue"].(string)
+
+// 	// Check if the required keys are missing and handle the error condition.
+// 	if !tableNameExists || !columnNameExists || !columnValueExists {
+// 		return errors.New("missing required keys in map[string]interface{} any of this tablename,columnname,columnvalue")
+// 	}
+// 	if !sortColumnExists {
+// 		// Assuming structut is a pointer to a slice of structs.
+// 		sliceValue := reflect.ValueOf(structure).Elem()
+// 		log.Println(reflect.ValueOf(structure).Elem().Type())
+// 		// Call the PrimaryKeyIdentifier function with the first element.
+// 		primaryKeyField, err := PrimaryKeyIdentifier(controllers.MyStruct{})
+// 		if err != nil {
+// 			return err
+// 		}
+// 		log.Println(primaryKeyField)
+// 		// Check if the slice is not empty.
+// 		if sliceValue.Len() > 0 {
+// 			// Get the first element from the slice.
+// 			// firstElement := sliceValue.Index(0).Addr().Interface()
+
+// 			// Call the PrimaryKeyIdentifier function with the first element.
+// 			primaryKeyField, err := PrimaryKeyIdentifier(controllers.MyStruct{})
+// 			if err != nil {
+// 				return err
+// 			}
+// 			log.Println(primaryKeyField)
+// 			sortColumn = primaryKeyField
+// 		}
+// 	}
+// 	// 	primaryKeyField, err := PrimaryKeyIdentifier(structure)
+// 	// 	if err != nil {
+// 	// 		return err
+// 	// 	}
+// 	// 	sortColumn = primaryKeyField
+// 	// }
+// 	if !sortValueExists {
+// 		sortValue = "ASC"
+// 	}
+// 	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = ? ORDER BY %s %s ;", tableName, columnName, sortColumn, sortValue)
+// 	log.Println(query)
+// 	// Execute the query and scan the results into the provided structure slice.
+// 	err := Db.Select(structure, query, columnValue)
+// 	return err
+// }
 
 //provide the tablenName and the primarykey which is id.
-func Delete(tableName string, id int) (bool, error) {
-	query := fmt.Sprintf("DELETE * FROM %s WHERE id= =:id", tableName)
-	result, err := Db.NamedExec(query, map[string]interface{}{"id": id})
+func Delete(data map[string]interface{}) (bool, error) {
+	tableName, tableNameExists := data["tablename"].(string)
+	columnName, columnNameExists := data["columnname"].(string)
+	columnValue, columnValueExists := data["columnvalue"]
+	// Check if the required keys are missing and handle the error condition.
+	if !tableNameExists || !columnNameExists || !columnValueExists {
+		return false, errors.New("missing required keys in map[string]interface{} any of this tablename,columnname,columnvalue")
+	}
+	query := fmt.Sprintf("DELETE FROM %s WHERE %s= :value", tableName, columnName)
+	result, err := Db.NamedExec(query, map[string]interface{}{"value": columnValue})
 	if err != nil {
-		log.Println(err)
+		// return false, err
 	} else {
 		Rowefffect, _ := result.RowsAffected()
 		return Rowefffect > 0, err
 	}
 	return false, err
-
 }
 
 // InsertDynamic inserts a new record into the specified table based on the struct values.
@@ -167,7 +229,15 @@ func Insert(tableName string, dataStruct interface{}) error {
 		field := valueType.Field(i)
 		valueField := value.Field(i)
 
-		columns = append(columns, field.Name)
+		// Get the database column name from the struct tag, if available.
+		columnName := field.Tag.Get("db")
+
+		if columnName == "" {
+			// If no db tag is specified, use the field name as the column name.
+			columnName = field.Name
+		}
+
+		columns = append(columns, columnName)
 		placeholders = append(placeholders, "?")
 		values = append(values, valueField.Interface())
 	}
@@ -181,37 +251,55 @@ func Insert(tableName string, dataStruct interface{}) error {
 
 // UpdateDynamic updates a record in the specified table based on the struct values.
 // It excludes the primary key column from the update.
-func update(tableName string, dataStruct interface{}, primaryKeyColumn string) error {
-	// Get the type and value of the dataStruct.
-	valueType := reflect.TypeOf(dataStruct)
-	value := reflect.ValueOf(dataStruct)
-
-	// Build the SET clause for the UPDATE statement dynamically based on the struct.
+func Update(tableName string, structure interface{}) error {
+	var primaryKeyColumnName string
 	var setValues []string
+	// Get the type and value of the structure.
+	valueType := reflect.TypeOf(structure)
+	value := reflect.ValueOf(structure)
+	// Build the SET clause for the UPDATE statement dynamically based on the struct.
 	values := make([]interface{}, 0)
 
 	for i := 0; i < valueType.NumField(); i++ {
 		field := valueType.Field(i)
 		valueField := value.Field(i)
-		fieldName := field.Name
+		// Get the database column name from the struct tag, if available.
+		columnName := field.Tag.Get("db")
 
+		if columnName == "" {
+			// If no db tag is specified, use the field name as the column name.
+			columnName = field.Name
+		}
+		// fieldName := field.Name
+		primaryName := field.Tag.Get("primarykey")
 		// Exclude the primary key column from the update.
-		if fieldName != primaryKeyColumn {
-			setValues = append(setValues, fmt.Sprintf("%s = ?", fieldName))
+		if primaryName != "true" {
+			setValues = append(setValues, fmt.Sprintf("%s = ?", columnName))
 			values = append(values, valueField.Interface())
 		}
+		if primaryName == "true" {
+			primaryKeyColumnName = field.Name
+			values = append(values)
+		}
 	}
-
 	setClause := strings.Join(setValues, ", ")
+
+	// Check if the primary key column name is empty.
+	if primaryKeyColumnName == "" {
+		return errors.New("primary key column name not found")
+	}
 
 	// Build the SQL UPDATE statement.
 	updateQuery := fmt.Sprintf("UPDATE %s SET %s WHERE %s = ?",
-		tableName, setClause, primaryKeyColumn)
+		tableName, setClause, primaryKeyColumnName)
 
 	// Get the primary key value.
-	primaryKeyValue := value.FieldByName(primaryKeyColumn).Interface()
+	primaryKeyField := value.FieldByName(primaryKeyColumnName)
+	if !primaryKeyField.IsValid() {
+		return errors.New("primary key field not found")
+	}
+	primaryKeyValue := primaryKeyField.Interface()
 	values = append(values, primaryKeyValue)
-
 	// Execute the dynamic UPDATE query.
 	result, err := Db.Exec(updateQuery, values...)
 	if err != nil {
@@ -220,8 +308,32 @@ func update(tableName string, dataStruct interface{}, primaryKeyColumn string) e
 
 	rowsAffected, _ := result.RowsAffected()
 	if rowsAffected == 0 {
-		return fmt.Errorf("no rows were updated")
+		return errors.New("no rows were updated")
 	}
 
 	return nil
+}
+func PrimaryKeyIdentifier(structure interface{}) (string, error) {
+	// Get the value of the structure (should be a pointer to a struct).
+	structValue := reflect.ValueOf(structure)
+
+	// Ensure that the provided structure is a pointer to a struct.
+	if structValue.Kind() != reflect.Ptr || structValue.Elem().Kind() != reflect.Struct {
+		return "", errors.New("invalid interface, must be a pointer to a struct")
+	}
+
+	// Get the type and value of the structure.
+	structType := structValue.Elem().Type()
+	primaryKeyField := ""
+
+	// Iterate through the struct fields to find the primary key field.
+	for i := 0; i < structType.NumField(); i++ {
+		field := structType.Field(i)
+		primaryKeyTag := field.Tag.Get("primarykey")
+		if primaryKeyTag == "true" {
+			primaryKeyField = field.Name
+			return primaryKeyField, nil
+		}
+	}
+	return "", errors.New("primary key field not found in the struct")
 }
