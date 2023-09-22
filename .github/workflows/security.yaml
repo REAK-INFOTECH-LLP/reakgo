@@ -18,7 +18,7 @@ jobs:
           docker run --rm \
             -v $(pwd):/workspace \
             zricethezav/gitleaks \
-            gitleaks detect --source /workspace
+            /app/gitleaks detect --path=/workspace
 
       - name: GoKart SAST
         run: |
