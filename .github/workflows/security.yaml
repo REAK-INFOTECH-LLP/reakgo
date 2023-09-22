@@ -13,12 +13,11 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v2
 
-      - name: Secret Leak Check
-        run: |
-          docker run --rm \
-            -v $(pwd):/workspace \
-            zricethezav/gitleaks \
-            /app/gitleaks detect --path=/workspace
+      - name: Gitleaks Check
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE}}
 
       - name: GoKart SAST
         run: |
