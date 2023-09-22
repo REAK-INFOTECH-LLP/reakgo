@@ -1,0 +1,35 @@
+name: Security Workflow
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  security_scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Secret Leak Check
+        run: |
+          docker run --rm \
+            -v $(pwd):/workspace \
+            zricethezav/gitleaks \
+            gitleaks detect --source /workspace
+
+      - name: GoKart SAST
+        run: |
+          docker run --rm \
+            -v $(pwd):/workspace \
+            reakinfotech/gokart \
+            gokart scan /workspace
+
+      - name: Semgrep
+        run: |
+          docker run --rm \
+            -v $(pwd):/workspace \
+            returntocorp/semgrep \
+            semgrep --config=auto /workspace
