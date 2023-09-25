@@ -30,7 +30,7 @@ jobs:
       # Install gokart
       - name: Install gokart
         run: |
-          go get github.com/hellsec/gokart
+          go install github.com/praetorian-inc/gokart@latest
 
       # Install semgrep
       - name: Install semgrep
