@@ -41,13 +41,13 @@ jobs:
       - name: Run gitleaks
         run: gitleaks
 
-      # Run gokart for SAST
-      - name: Run gokart SAST
-        run: gokart scan -v
-
       # Run semgrep for code analysis
       - name: Run semgrep
         run: semgrep --config=p/security-audit
+
+      # Run gokart for SAST
+      - name: Run gokart SAST
+        run: gokart scan -v
 
       # Save gitleaks, gokart, and semgrep reports as artifacts
       - name: Archive Reports
