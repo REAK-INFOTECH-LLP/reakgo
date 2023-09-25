@@ -43,7 +43,7 @@ jobs:
 
       # Run gokart for SAST
       - name: Run gokart SAST
-        run: gokart analyze
+        run: gokart scan -v
 
       # Run semgrep for code analysis
       - name: Run semgrep
