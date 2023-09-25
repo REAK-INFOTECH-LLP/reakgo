@@ -2,7 +2,7 @@
 
 # Check if two arguments are provided
 if [ $# -ne 2 ]; then
-    echo "Usage: ./generate.sh <packagename> <filename>"
+    echo "Usage: ./system.sh <packagename> <filename>"
     exit 1
 fi
 
@@ -11,9 +11,8 @@ packagename="$1"
 filename="$2"
 
 # Compile the generator program
-cd generator
-go build
+cd system
 cd ..
 
 # Run the generator executable with the provided package name and filename as arguments
-./generator/generator "$packagename" "$filename"
+./system/system "$packagename" "$filename"
