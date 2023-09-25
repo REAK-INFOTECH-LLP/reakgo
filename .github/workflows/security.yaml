@@ -26,11 +26,16 @@ jobs:
           tar xf gitleaks.tar.gz
           sudo mv gitleaks /usr/local/bin/
           rm gitleaks.tar.gz
+      
+      # Install gokart
+      - name: Install gokart
+        run: |
+          go get github.com/hellsec/gokart
 
       # Install semgrep
       - name: Install semgrep
         run: |
-          curl -fsSL https://semgrep.dev/install.sh | bash -s -- -c stable
+          pip install semgrep
 
       # Run gitleaks to check for secrets
       - name: Run gitleaks
