@@ -1,4 +1,4 @@
-name: Security Workflow
+name: Security and Code Analysis
 
 on:
   pull_request:
@@ -6,29 +6,49 @@ on:
       - main
 
 jobs:
-  security_scan:
+  security_and_code_analysis:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v2
 
-      - name: Gitleaks Check
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE}}
+      # Install Go (required for gokart)
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.x # Choose your desired Go version
 
-      - name: GoKart SAST
+      # Install gitleaks
+      - name: Install gitleaks
         run: |
-          docker run --rm \
-            -v $(pwd):/workspace \
-            reakinfotech/gokart \
-            gokart scan /workspace
+          wget -O gitleaks https://github.com/zricethezav/gitleaks/releases/latest/download/gitleaks-linux-amd64
+          chmod +x gitleaks
+          sudo mv gitleaks /usr/local/bin/
 
-      - name: Semgrep
+      # Install semgrep
+      - name: Install semgrep
         run: |
-          docker run --rm \
-            -v $(pwd):/workspace \
-            returntocorp/semgrep \
-            semgrep --config=auto /workspace
+          curl -fsSL https://semgrep.dev/install.sh | bash -s -- -c stable
+
+      # Run gitleaks to check for secrets
+      - name: Run gitleaks
+        run: gitleaks --path=. --redact
+
+      # Run gokart for SAST
+      - name: Run gokart SAST
+        run: gokart analyze
+
+      # Run semgrep for code analysis
+      - name: Run semgrep
+        run: semgrep --config=p/security-audit
+
+      # Save gitleaks, gokart, and semgrep reports as artifacts
+      - name: Archive Reports
+        uses: actions/upload-artifact@v2
+        with:
+          name: security_and_code_analysis_reports
+          path: |
+            gitleaks-report.json
+            gokart-report.json
+            semgrep-report.json
