@@ -104,6 +104,7 @@ func cacheTemplates() *template.Template {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
+	models.VerifyToken()
 	router.Routes(w, r)
 }
 

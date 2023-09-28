@@ -1,6 +1,8 @@
 package models
 
 import (
+	"database/sql"
+	"fmt"
 	"log"
 	"reakgo/utility"
 	"time"
@@ -102,6 +104,35 @@ func (auth Authentication) CheckTwoFactorRegistration(userId int32) string {
 	return twoFactor.Secret
 }
 
-func (auth Authentication) GetAllRecords() ([]Authentication, error) {
+func (auth Authentication) GetAllAuthRecords() ([]Authentication, error) {
+	var allAuthenticationRows []Authentication
 
+	// SQL query to select all rows from the Abc table
+	query := "SELECT * FROM authentication"
+
+	// Execute the query and scan the results into the Abc slice
+	err := utility.Db.Select(&allAuthenticationRows, query)
+	if err != nil {
+		return nil, err
+	}
+
+	return allAuthenticationRows, nil
+}
+
+func (auth Authentication) GetAuthenticationByToken(token string) (*Authentication, error) {
+
+	var authO Authentication
+
+	// SQL query to select a row by Token
+	query := "SELECT * FROM authentication WHERE Token = ? LIMIT 1"
+
+	// Execute the query and scan the result into the Authentication struct
+	err := utility.Db.Get(&authO, query, token)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("Authentication not found for Token: %s", token)
+		}
+		return nil, err
+	}
+	return &authO, nil
 }
