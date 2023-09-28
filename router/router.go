@@ -13,8 +13,8 @@ func Routes(w http.ResponseWriter, r *http.Request) {
 	route := strings.Trim(r.URL.Path, "/")
 	switch route {
 	case "", "index":
-		utility.CheckACL(w, r, 0)
-		controllers.BaseIndex(w, r)
+		//utility.CheckACL(w, r, 0)
+		controllers.BaseAPI(w, r)
 	case "login":
 		utility.CheckACL(w, r, 0)
 		controllers.Login(w, r)

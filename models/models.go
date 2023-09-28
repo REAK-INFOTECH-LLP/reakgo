@@ -4,8 +4,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
+	"net/http"
 	"reakgo/utility"
+	"strings"
 )
 
 var (
@@ -44,15 +47,36 @@ func GenerateCache() {
 	}
 }
 
-func VerifyToken() {
-	if entry, err := utility.Cache.Get("456"); err == nil {
+func VerifyToken(r *http.Request) (*Authentication, error) {
+	authToken := r.Header.Get("Authorization")
+	userToken := strings.Split(authToken, " ")
+	if len(userToken) != 2 || strings.ToLower(userToken[0]) != "bearer" {
+		return nil, fmt.Errorf("invalid authorization header format")
+	}
+
+	if entry, err := utility.Cache.Get(userToken[1]); err == nil {
+
 		// JSON to Struct for data consistency if coming in from DB or from cache
 		authRow, err := jsonStringToAuthentication(string(entry))
-		log.Println(authRow, err)
+		return authRow, err
+
 	} else {
 		// Pull Record from DB and add to Cache
-		data, err := Authentication.GetAuthenticationByToken(Authentication{}, "123")
-		log.Println(data, err)
+
+		// PS : Adding DB failsafe opens up a DDoS security issue that people can keep trying with random tokens
+		// and crash the server easily by blocking DB pool connections
+
+		data, err := Authentication.GetAuthenticationByToken(Authentication{}, userToken[1])
+		if err != nil {
+			return nil, err
+		}
+		jsonData, err := json.Marshal(data)
+		if err == nil {
+			// Rehydrate if we got the JSON conversion done
+			// Fails would be rare, but if it happens kind of defeat the purpose as JSON unmarshall would also crash
+			utility.Cache.Set(data.Token, jsonData)
+		}
+		return data, err
 	}
 }
 

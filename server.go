@@ -57,6 +57,8 @@ func main() {
 
 	// Initialize Caching
 	cacheInit()
+	// Generate cache as a go routine as to not halt operation,
+	// Cache fail-safe is already implemented so will fetch from DB incase the cache is not populated
 	go models.GenerateCache()
 
 	http.HandleFunc("/", handler)
@@ -104,7 +106,6 @@ func cacheTemplates() *template.Template {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	models.VerifyToken()
 	router.Routes(w, r)
 }
 
@@ -149,7 +150,7 @@ func cacheInit() {
 		// cache will not allocate more memory than this limit, value in MB
 		// if value is reached then the oldest entries can be overridden for the new ones
 		// 0 value means no size limit
-		HardMaxCacheSize: 8192,
+		HardMaxCacheSize: 512,
 
 		// callback fired when the oldest entry is removed because of its expiration time or no space left
 		// for the new entry, or because delete was called. A bitmask representing the reason will be returned.
