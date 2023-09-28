@@ -5,6 +5,7 @@
         </head>
         <body>
             <form id="login" method="POST">
+                {{index . "csrf"}}
                 Email : <input type="text" name="email" /> <br />
                 Password : <input type="password" name="password" /> <br />
                 Confirm Password : <input id="password" type="password" name="confirmPassword" /> <br />

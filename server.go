@@ -54,10 +54,15 @@ func init() {
 
 func main() {
 	utility.CSRF = csrf.Protect([]byte("v0kDIaHLy2TpHrumcl4Z0gpel8DpV9zo"))
+
 	mux := mux.NewRouter()
-	mux.PathPrefix("/").Handler(handler)
+
+	mux.PathPrefix("/").HandlerFunc(handler)
+
 	// Serve static assets
-	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
+	staticHandler := http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/")))
+	mux.PathPrefix("/assets/").Handler(staticHandler)
+
 	log.Fatal(http.ListenAndServe(":"+os.Getenv("WEB_PORT"), utility.CSRF(mux)))
 }
 
@@ -99,7 +104,6 @@ func cacheTemplates() *template.Template {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	log.Println("Handler")
 	router.Routes(w, r)
 }
 
