@@ -101,3 +101,7 @@ func (auth Authentication) CheckTwoFactorRegistration(userId int32) string {
 	utility.Db.Get(&twoFactor, "SELECT * FROM twoFactor WHERE userId = ?", userId)
 	return twoFactor.Secret
 }
+
+func (auth Authentication) GetAllRecords() ([]Authentication, error) {
+
+}

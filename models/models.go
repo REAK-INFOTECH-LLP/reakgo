@@ -3,6 +3,8 @@ package models
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+	"reakgo/utility"
 )
 
 var (
@@ -23,4 +25,16 @@ func standardizeError(err error) error {
 	}
 
 	return err
+}
+
+func GenerateCache() {
+
+}
+
+func VerifyToken() {
+	if entry, err := utility.Cache.Get("my-unique-key"); err == nil {
+		fmt.Println(string(entry))
+	} else {
+		// Pull Record from DB and add to Cache
+	}
 }

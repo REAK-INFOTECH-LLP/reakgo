@@ -16,6 +16,7 @@ import (
 	"html/template"
 	"net/http"
 
+	"github.com/allegro/bigcache/v3"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 )
@@ -28,6 +29,9 @@ var Store *sessions.FilesystemStore
 
 // DB Connections
 var Db *sqlx.DB
+
+// Cache
+var Cache *bigcache.BigCache
 
 type Session struct {
 	Key   string
