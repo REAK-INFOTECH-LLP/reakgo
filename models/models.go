@@ -45,11 +45,24 @@ func GenerateCache() {
 }
 
 func VerifyToken() {
-	if entry, err := utility.Cache.Get("123"); err == nil {
-		log.Println(string(entry))
+	if entry, err := utility.Cache.Get("456"); err == nil {
+		// JSON to Struct for data consistency if coming in from DB or from cache
+		authRow, err := jsonStringToAuthentication(string(entry))
+		log.Println(authRow, err)
 	} else {
 		// Pull Record from DB and add to Cache
 		data, err := Authentication.GetAuthenticationByToken(Authentication{}, "123")
 		log.Println(data, err)
 	}
+}
+
+func jsonStringToAuthentication(jsonStr string) (*Authentication, error) {
+	var auth Authentication
+
+	// Unmarshal the JSON string into the Authentication struct
+	if err := json.Unmarshal([]byte(jsonStr), &auth); err != nil {
+		return nil, err
+	}
+
+	return &auth, nil
 }
