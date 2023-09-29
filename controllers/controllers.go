@@ -3,6 +3,10 @@ package controllers
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+	"net/http"
+	"reakgo/models"
+	"reakgo/utility"
 )
 
 var (
@@ -23,4 +27,25 @@ func standardizeError(err error) error {
 	}
 
 	return err
+}
+
+func CheckACL(w http.ResponseWriter, r *http.Request, allowedAccess []string) bool {
+	// Check if Token is provided else we continue with Session based auth management
+	apiToken := r.Header.Get("Authorization")
+	if apiToken == "" {
+		// API Token not found, Switching to session based auth
+		userType := utility.SessionGet(r, "type")
+		if userType == nil {
+			userType = "guest"
+		}
+		if utility.StringInArray(fmt.Sprintf("%v", userType), allowedAccess) {
+			return true
+		} else {
+			utility.RedirectTo(w, r, "forbidden")
+			return false
+		}
+	} else {
+		// Token based Auth
+		models.VerifyToken(r)
+	}
 }

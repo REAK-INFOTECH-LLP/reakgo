@@ -13,7 +13,7 @@ func BaseIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func BaseAPI(w http.ResponseWriter, r *http.Request) {
-	data, err := models.VerifyToken(r)
+	data, err := models.VerifyToken(r, false)
 	if err != nil {
 		// Redirect to 403
 	} else {

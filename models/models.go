@@ -75,8 +75,14 @@ func VerifyToken(r *http.Request) (*Authentication, error) {
 			// Rehydrate if we got the JSON conversion done
 			// Fails would be rare, but if it happens kind of defeat the purpose as JSON unmarshall would also crash
 			utility.Cache.Set(data.Token, jsonData)
+		} else {
+			return nil, err
 		}
-		return data, err
+		if returnUserData {
+			return data, err
+		} else {
+			return nil, nil
+		}
 	}
 }
 
