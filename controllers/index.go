@@ -13,11 +13,11 @@ func BaseIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func BaseAPI(w http.ResponseWriter, r *http.Request) {
-	data, err := models.VerifyToken(r, false)
+	log.Println(r.Header.Get("tokenPayload"))
+	err := models.VerifyToken(r)
 	if err != nil {
 		// Redirect to 403
 	} else {
-		log.Println(data)
 		name := []string{"Test1", "Test2"}
 		utility.RenderTemplate(w, r, "index", name)
 	}

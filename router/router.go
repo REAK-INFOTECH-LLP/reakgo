@@ -13,7 +13,7 @@ func Routes(w http.ResponseWriter, r *http.Request) {
 	switch route {
 	case "", "index":
 		controllers.CheckACL(w, r, []string{"guest", "admin", "user"})
-		controllers.BaseIndex(w, r)
+		controllers.BaseAPI(w, r)
 	case "login":
 		controllers.CheckACL(w, r, []string{"admin", "user"})
 		controllers.Login(w, r)

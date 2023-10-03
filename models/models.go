@@ -47,19 +47,18 @@ func GenerateCache() {
 	}
 }
 
-func VerifyToken(r *http.Request) (*Authentication, error) {
+func VerifyToken(r *http.Request) error {
 	authToken := r.Header.Get("Authorization")
 	userToken := strings.Split(authToken, " ")
 	if len(userToken) != 2 || strings.ToLower(userToken[0]) != "bearer" {
-		return nil, fmt.Errorf("invalid authorization header format")
+		return fmt.Errorf("invalid authorization header format")
 	}
 
 	if entry, err := utility.Cache.Get(userToken[1]); err == nil {
 
-		// JSON to Struct for data consistency if coming in from DB or from cache
-		authRow, err := jsonStringToAuthentication(string(entry))
-		return authRow, err
-
+		// Set JSON Payload to the header so the users can use the same
+		r.Header.Add("tokenPayload", string(entry))
+		return err
 	} else {
 		// Pull Record from DB and add to Cache
 
@@ -68,20 +67,17 @@ func VerifyToken(r *http.Request) (*Authentication, error) {
 
 		data, err := Authentication.GetAuthenticationByToken(Authentication{}, userToken[1])
 		if err != nil {
-			return nil, err
+			return err
 		}
 		jsonData, err := json.Marshal(data)
 		if err == nil {
 			// Rehydrate if we got the JSON conversion done
 			// Fails would be rare, but if it happens kind of defeat the purpose as JSON unmarshall would also crash
 			utility.Cache.Set(data.Token, jsonData)
+			r.Header.Add("tokenPayload", string(jsonData))
+			return err
 		} else {
-			return nil, err
-		}
-		if returnUserData {
-			return data, err
-		} else {
-			return nil, nil
+			return err
 		}
 	}
 }

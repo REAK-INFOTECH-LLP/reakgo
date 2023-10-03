@@ -46,6 +46,11 @@ func CheckACL(w http.ResponseWriter, r *http.Request, allowedAccess []string) bo
 		}
 	} else {
 		// Token based Auth
-		models.VerifyToken(r)
+		err := models.VerifyToken(r)
+		if err != nil {
+			return true
+		} else {
+			return false
+		}
 	}
 }
