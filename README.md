@@ -154,6 +154,7 @@ The `Find` function queries a database table based on the provided criteria and 
   - `columnvalue` (interface{}, required): The value to filter the `columnname` by.
   - `sortcolumn` (string, optional): The name of the column to sort the results by. Defaults to the primary key of the table defined in the structure.
   - `sortvalue` (string, optional): The sorting order, which can be "ASC" (ascending) or "DESC" (descending). Defaults to "ASC".
+  - `showcolumn`([]string,optional):The column which data you want to retrive only by default its *.
 
 ### Return Value:
 
@@ -184,6 +185,7 @@ data := map[string]interface{}{
     "columnvalue": "John",
     "sortcolumn":  "age",
     "sortvalue":   "DESC",
+    "showcolumn":[]string{"name","age"},
 }
 
 var result []YourStruct
