@@ -73,7 +73,7 @@ func Find(data map[string]interface{}, structure interface{}) error {
 
 	// Check if the required keys are missing and handle the error condition.
 	if !tableNameExists || !columnNameExists || !columnValueExists {
-		return errors.New("missing required keys in map[string]interface{} any of this tablename,columnname,columnvalue")
+		return errors.New("missing required keys any of this tablename,columnname,columnvalue")
 	}
 
 	// Ensure that 'structure' is a pointer to a slice of structs.
@@ -113,7 +113,7 @@ func Delete(data map[string]interface{}) (bool, error) {
 	columnValue, columnValueExists := data["columnvalue"]
 	// Check if the required keys are missing and handle the error condition.
 	if !tableNameExists || !columnNameExists || !columnValueExists {
-		return false, errors.New("missing required keys in map[string]interface{} any of this tablename,columnname,columnvalue")
+		return false, errors.New("missing required keys any of this tablename,columnname,columnvalue")
 	}
 	query := fmt.Sprintf("DELETE FROM %s WHERE %s= :value", tableName, columnName)
 	result, err := utility.Db.NamedExec(query, map[string]interface{}{"value": columnValue})
