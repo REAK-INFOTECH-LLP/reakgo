@@ -213,7 +213,28 @@ The `Insert` function simplifies the process of adding a new record to a databas
   3. An error occurs while executing the SQL query.
 
 If you encounter one of the above two errors after reading this documentation, perhaps it's time for a coffee break!
+### Example Usage:
 
+```go
+tablename=   "your_table"
+type MyStruct struct {
+	Id          int64  `json:"id" db:"id" primarykey:"true" `
+	Name        string `json:"name" db:"name" `
+	Age         int    `json:"age" db:"age"`
+	Email       string `json:"email" db:"email"`
+	PhoneNumber int64  `json:"phone_number" db:"phone_number"`
+}
+var result MyStruct
+    result.Name= "name"
+    result.Age= 14
+    result.Email  "email@google.com"
+    result.Phonenumber 1234567890
+
+err := Insert(tablename, &result)
+if err != nil {
+    // Handle the error
+}
+```
 # Delete Function
 
 The `Delete` function allows you to delete records from a database table based on specified criteria.
@@ -235,7 +256,21 @@ The `Delete` function allows you to delete records from a database table based o
 
 The `Delete` function is useful for removing records from a database table based on specific conditions.
 
+### Example Usage:
 
+```go
+data := map[string]interface{}{
+    "tablename":   "your_table",
+    "columnname":  "name",
+    "columnvalue": "John",
+}
+
+var result []YourStruct
+err := Delete(data, &result)
+if err != nil {
+    // Handle the error
+}
+```
 # Update Function
 
 The `Update` function allows you to modify a row in a specified database table based on a unique identifier (primary key) that you provide in your struct.
@@ -255,3 +290,25 @@ The `Update` function allows you to modify a row in a specified database table b
     2. The value of the field defined as the primary key is either empty or invalid (non-existent).
 
 The `Update` function simplifies the process of modifying a specific row in a database table based on the provided unique identifier.
+### Example Usage:
+
+```go
+tablename=   "your_table"
+type MyStruct struct {
+	Id          int64  `json:"id" db:"id" primarykey:"true" `
+	Name        string `json:"name" db:"name" `
+	Age         int    `json:"age" db:"age"`
+	Email       string `json:"email" db:"email"`
+	PhoneNumber int64  `json:"phone_number" db:"phone_number"`
+}
+var result MyStruct
+    result.Name= "name"
+    result.Age= 14
+    result.Email  "email@google.com"
+    result.Phonenumber 1234567890
+
+err := Update(tablename, &result)
+if err != nil {
+    // Handle the error
+}
+```
