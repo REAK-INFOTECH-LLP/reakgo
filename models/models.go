@@ -70,6 +70,7 @@ func Find(data map[string]interface{}, structure interface{}) error {
 	columnValue, columnValueExists := data["columnvalue"]
 	sortColumn, sortColumnExists := data["sortcolumn"].(string)
 	sortValue, sortValueExists := data["sortvalue"].(string)
+	colInterface, colExists := data["showcolumn"]
 
 	// Check if the required keys are missing and handle the error condition.
 	if !tableNameExists || !columnNameExists || !columnValueExists {
@@ -98,8 +99,20 @@ func Find(data map[string]interface{}, structure interface{}) error {
 	if !sortValueExists {
 		sortValue = "ASC"
 	}
+	// Check if 'col' key exists and is a list of column names
+	var columns []string
+	if colExists {
+		col, isStringSlice := colInterface.([]string)
+		if isStringSlice {
+			columns = col
+		} else {
+			return errors.New("provided column names are not found please check all the column name first")
+		}
+	} else {
+		columns = append(columns, "*")
+	}
 
-	query := fmt.Sprintf("SELECT * FROM %s WHERE %s = ? ORDER BY %s %s ;", tableName, columnName, sortColumn, sortValue)
+	query := fmt.Sprintf("SELECT %s FROM %s WHERE %s = ? ORDER BY %s %s ;", strings.Join(columns, ", "), tableName, columnName, sortColumn, sortValue)
 
 	// Execute the query and scan the results into the provided structure slice.
 	err := utility.Db.Select(structure, query, columnValue)
