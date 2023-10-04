@@ -63,7 +63,11 @@ func main() {
 	staticHandler := http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/")))
 	mux.PathPrefix("/assets/").Handler(staticHandler)
 
-	log.Fatal(http.ListenAndServe(":"+os.Getenv("WEB_PORT"), utility.CSRF(mux)))
+	if os.Getenv("APP_IS") == "monolith" {
+		log.Fatal(http.ListenAndServe(":"+os.Getenv("WEB_PORT"), utility.CSRF(mux)))
+	} else if os.Getenv("APP_IS") == "microservice" {
+		log.Fatal(http.ListenAndServe(":"+os.Getenv("WEB_PORT"), nil))
+	}
 }
 
 func cacheTemplates() *template.Template {
