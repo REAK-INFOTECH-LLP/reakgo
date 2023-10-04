@@ -17,6 +17,8 @@ import (
 
 	"github.com/allegro/bigcache/v3"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/gorilla/csrf"
+	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
@@ -54,18 +56,27 @@ func init() {
 }
 
 func main() {
-
 	// Initialize Caching
 	cacheInit()
 	// Generate cache as a go routine as to not halt operation,
 	// Cache fail-safe is already implemented so will fetch from DB incase the cache is not populated
 	go models.GenerateCache()
 
-	http.HandleFunc("/", handler)
-	// Serve static assets
-	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
+	utility.CSRF = csrf.Protect([]byte("v0kDIaHLy2TpHrumcl4Z0gpel8DpV9zo"))
 
-	log.Fatal(http.ListenAndServe(":"+os.Getenv("WEB_PORT"), nil))
+	mux := mux.NewRouter()
+
+	mux.PathPrefix("/").HandlerFunc(handler)
+
+	// Serve static assets
+	staticHandler := http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/")))
+	mux.PathPrefix("/assets/").Handler(staticHandler)
+
+	if os.Getenv("APP_IS") == "monolith" {
+		log.Fatal(http.ListenAndServe(":"+os.Getenv("WEB_PORT"), utility.CSRF(mux)))
+	} else if os.Getenv("APP_IS") == "microservice" {
+		log.Fatal(http.ListenAndServe(":"+os.Getenv("WEB_PORT"), nil))
+	}
 }
 
 func cacheTemplates() *template.Template {

@@ -1,0 +1,73 @@
+name: Security and Code Analysis
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  security_and_code_analysis:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Install Go (required for gokart)
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '^1.20.8' # Choose your desired Go version
+
+      # Install gitleaks
+      - name: Install gitleaks
+        run: |
+          wget -q -O gitleaks.tar.gz https://github.com/gitleaks/gitleaks/releases/download/v8.18.0/gitleaks_8.18.0_linux_x64.tar.gz
+          tar xf gitleaks.tar.gz
+          sudo mv gitleaks /usr/local/bin/
+          rm gitleaks.tar.gz
+
+      # Install semgrep
+      - name: Install semgrep
+        run: |
+          pip install semgrep
+
+      # Run gitleaks to check for secrets
+      - name: Run gitleaks
+        run: gitleaks detect --source . -v
+
+      # Run semgrep for code analysis
+      - name: Run semgrep
+        run: semgrep --config=p/security-audit
+
+      # Save gitleaks, gokart, and semgrep reports as artifacts
+      - name: Archive Reports
+        uses: actions/upload-artifact@v2
+        with:
+          name: security_and_code_analysis_reports
+          path: |
+            gitleaks-report.json
+            gokart-report.json
+            semgrep-report.json
+
+  gokart:
+    name: GoKart scanner
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+    - name: Checkout the code
+      uses: actions/checkout@v2
+
+    - name: Run GoKart
+      uses: kitabisa/gokart-action@v1.0.0
+      with:
+        globalsTainted: true
+        output: results.sarif
+    
+    - name: Upload GoKart results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: results.sarif

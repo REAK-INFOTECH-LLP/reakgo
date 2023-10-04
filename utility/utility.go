@@ -17,6 +17,7 @@ import (
 	"net/http"
 
 	"github.com/allegro/bigcache/v3"
+	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 )
@@ -32,6 +33,9 @@ var Db *sqlx.DB
 
 // Cache
 var Cache *bigcache.BigCache
+
+// CSRF
+var CSRF func(http.Handler) http.Handler
 
 type Session struct {
 	Key   string
@@ -116,6 +120,7 @@ func RenderTemplate(w http.ResponseWriter, r *http.Request, template string, dat
 	tmplData["data"] = data
 	tmplData["flash"] = viewFlash(w, r)
 	tmplData["session"] = session.Values["email"]
+	tmplData["csrf"] = csrf.TemplateField(r)
 	View.ExecuteTemplate(w, template, tmplData)
 }
 
