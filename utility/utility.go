@@ -16,6 +16,7 @@ import (
 	"html/template"
 	"net/http"
 
+	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 )
@@ -28,6 +29,8 @@ var Store *sessions.FilesystemStore
 
 // DB Connections
 var Db *sqlx.DB
+
+var CSRF func(http.Handler) http.Handler
 
 type Session struct {
 	Key   string
@@ -131,6 +134,7 @@ func RenderTemplate(w http.ResponseWriter, r *http.Request, template string, dat
 	tmplData["data"] = data
 	tmplData["flash"] = viewFlash(w, r)
 	tmplData["session"] = session.Values["email"]
+	tmplData["csrf"] = csrf.TemplateField(r)
 	View.ExecuteTemplate(w, template, tmplData)
 }
 
