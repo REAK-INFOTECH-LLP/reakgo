@@ -12,14 +12,18 @@ func Routes(w http.ResponseWriter, r *http.Request) {
 	route := strings.Trim(r.URL.Path, "/")
 	switch route {
 	case "", "index":
-		controllers.CheckACL(w, r, []string{"guest", "admin", "user"})
-		controllers.BaseAPI(w, r)
+		check := controllers.CheckACL(w, r, []string{"guest", "admin", "user"})
+		if check {
+			controllers.BaseAPI(w, r)
+		}
 	case "login":
 		controllers.CheckACL(w, r, []string{"admin", "user"})
 		controllers.Login(w, r)
 	case "dashboard":
-		controllers.CheckACL(w, r, []string{"admin", "user"})
-		controllers.Dashboard(w, r)
+		check := controllers.CheckACL(w, r, []string{"admin", "user"})
+		if check {
+			controllers.Dashboard(w, r)
+		}
 	case "addSimpleForm":
 		controllers.CheckACL(w, r, []string{"admin", "user"})
 		controllers.AddForm(w, r)

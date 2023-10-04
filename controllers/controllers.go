@@ -38,9 +38,7 @@ func CheckACL(w http.ResponseWriter, r *http.Request, allowedAccess []string) bo
 		if userType == nil {
 			userType = "guest"
 		}
-		if utility.StringInArray(fmt.Sprintf("%v", userType), allowedAccess) {
-			return true
-		} else {
+		if !utility.StringInArray(fmt.Sprintf("%v", userType), allowedAccess) {
 			utility.RedirectTo(w, r, "forbidden")
 			return false
 		}
@@ -48,9 +46,9 @@ func CheckACL(w http.ResponseWriter, r *http.Request, allowedAccess []string) bo
 		// Token based Auth
 		err := models.VerifyToken(r)
 		if err != nil {
-			return true
-		} else {
+			http.Error(w, "403 Forbidden", http.StatusForbidden)
 			return false
 		}
 	}
+	return true
 }
