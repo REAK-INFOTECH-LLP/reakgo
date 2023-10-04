@@ -14,7 +14,7 @@ func Routes(w http.ResponseWriter, r *http.Request) {
 	case "", "index":
 		check := controllers.CheckACL(w, r, []string{"guest", "admin", "user"})
 		if check {
-			controllers.BaseAPI(w, r)
+			controllers.BaseIndex(w, r)
 		}
 	case "login":
 		controllers.CheckACL(w, r, []string{"admin", "user"})
