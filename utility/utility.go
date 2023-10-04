@@ -16,6 +16,7 @@ import (
 	"html/template"
 	"net/http"
 
+	"github.com/allegro/bigcache/v3"
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
@@ -30,6 +31,10 @@ var Store *sessions.FilesystemStore
 // DB Connections
 var Db *sqlx.DB
 
+// Cache
+var Cache *bigcache.BigCache
+
+// CSRF
 var CSRF func(http.Handler) http.Handler
 
 type Session struct {
@@ -75,25 +80,6 @@ func SessionGet(r *http.Request, key string) interface{} {
 	session, _ := Store.Get(r, os.Getenv("SESSION_NAME"))
 	// Set some session values.
 	return session.Values[key]
-}
-
-func CheckACL(w http.ResponseWriter, r *http.Request, minLevel int) bool {
-	userType := SessionGet(r, "type")
-	var level int = 0
-	switch userType {
-	case "user":
-		level = 1
-	case "admin":
-		level = 2
-	default:
-		level = 0
-	}
-	if level >= minLevel {
-		return true
-	} else {
-		RedirectTo(w, r, "forbidden")
-		return false
-	}
 }
 
 func AddFlash(flavour string, message string, w http.ResponseWriter, r *http.Request) {
@@ -301,4 +287,14 @@ func RenderTemplateData(w http.ResponseWriter, r *http.Request, template string,
 	tmplData["flash"] = viewFlash(w, r)
 	tmplData["session"] = session.Values["email"]
 	View.ExecuteTemplate(w, template, tmplData)
+}
+
+func StringInArray(target string, arr []string) bool {
+	// Can change to slices.Contain if we're targetting 1.21+
+	for _, s := range arr {
+		if s == target {
+			return true
+		}
+	}
+	return false
 }
