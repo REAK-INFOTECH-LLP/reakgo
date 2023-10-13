@@ -10,6 +10,7 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 
 	//"log"
 	//"fmt"
@@ -297,4 +298,9 @@ func RenderTemplateData(w http.ResponseWriter, r *http.Request, template string,
 	tmplData["flash"] = viewFlash(w, r)
 	tmplData["session"] = session.Values["email"]
 	View.ExecuteTemplate(w, template, tmplData)
+}
+
+func WriteColumnsToFile(file *os.File, columns []string) {
+	file.WriteString(strings.Join(columns, "\n"))
+	file.WriteString("\n")
 }

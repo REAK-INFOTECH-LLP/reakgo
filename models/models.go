@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+var ColumnMap = make(map[string]string)
 var (
 	// ErrCode is a config or an internal error
 	ErrCode = errors.New("Case statement in code is not correct.")
@@ -76,6 +77,11 @@ func Find(data map[string]interface{}, structure interface{}) error {
 	if !tableNameExists || !columnNameExists || !columnValueExists {
 		return errors.New("missing required keys any of this tablename,columnname,columnvalue")
 	}
+	//checking the columnName provided is matching to the database columnName or not
+	_, exist := ColumnMap[columnName]
+	if !exist {
+		return errors.New("columnn does not exist .Please check the columnname")
+	}
 
 	// Ensure that 'structure' is a pointer to a slice of structs.
 	structureValue := reflect.ValueOf(structure)
@@ -94,6 +100,11 @@ func Find(data map[string]interface{}, structure interface{}) error {
 		} else {
 			sortColumn = primaryKeyField
 		}
+	}
+	//checking the sorting columnName provided is matching to the database columnName or not.
+	_, ok := ColumnMap[sortColumn]
+	if !ok {
+		return errors.New("sort columnn does not exist .Please check the columnname")
 	}
 
 	if !sortValueExists {
@@ -127,6 +138,11 @@ func Delete(data map[string]interface{}) (bool, error) {
 	// Check if the required keys are missing and handle the error condition.
 	if !tableNameExists || !columnNameExists || !columnValueExists {
 		return false, errors.New("missing required keys any of this tablename,columnname,columnvalue")
+	}
+	//checking the columnName provided is matching to the database columnName or not
+	_, exist := ColumnMap[columnName]
+	if !exist {
+		return false, errors.New("columnn does not exist .Please check the columnname")
 	}
 	query := fmt.Sprintf("DELETE FROM %s WHERE %s= :value", tableName, columnName)
 	result, err := utility.Db.NamedExec(query, map[string]interface{}{"value": columnValue})
@@ -261,4 +277,44 @@ func PrimaryKeyIdentifier(structure interface{}) (string, error) {
 		}
 	}
 	return "", errors.New("primary key field not found in the struct")
+}
+func ListTables() ([]string, error) {
+	rows, err := utility.Db.Query("SHOW TABLES")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tables []string
+	for rows.Next() {
+		var table string
+		if err := rows.Scan(&table); err != nil {
+			return nil, err
+		}
+		tables = append(tables, table)
+	}
+
+	return tables, nil
+}
+func ListColumns(table string) ([]string, error) {
+	query := fmt.Sprintf("SELECT column_name FROM information_schema.columns WHERE table_name = '%s'", table)
+	rows, err := utility.Db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var columns []string
+	for rows.Next() {
+
+		var column string
+		if err := rows.Scan(&column); err != nil {
+			return nil, err
+		}
+		columns = append(columns, column)
+		// Add the column and its column to the map
+		ColumnMap[column] = column
+
+	}
+
+	return columns, nil
 }
