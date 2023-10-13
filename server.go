@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/gob"
 	"html/template"
 	"log"
@@ -14,7 +15,10 @@ import (
 	"reakgo/router"
 	"reakgo/utility"
 
+	"github.com/allegro/bigcache/v3"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/gorilla/csrf"
+	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
@@ -47,24 +51,33 @@ func init() {
 	utility.Db.SetMaxOpenConns(10)
 	utility.Db.SetMaxIdleConns(10)
 	columnNameReciever()
+
 	gob.Register(utility.Flash{})
 
 }
 
 func main() {
-	http.HandleFunc("/", handler)
+	// Initialize Caching
+	cacheInit()
+	// Generate cache as a go routine as to not halt operation,
+	// Cache fail-safe is already implemented so will fetch from DB incase the cache is not populated
+	go models.GenerateCache()
+
+	utility.CSRF = csrf.Protect([]byte("v0kDIaHLy2TpHrumcl4Z0gpel8DpV9zo"))
+
+	mux := mux.NewRouter()
+
+	mux.PathPrefix("/").HandlerFunc(handler)
+
 	// Serve static assets
-	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
+	staticHandler := http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/")))
+	mux.PathPrefix("/assets/").Handler(staticHandler)
 
-	/*
-	   router := mux.NewRouter()
-	   router.HandleFunc("/", controllers.BaseIndex)
-	   router.HandleFunc("/login", controllers.Login)
-	   router.HandleFunc("/dashboard", controllers.Dashboard)
-	*/
-
-	log.Fatal(http.ListenAndServe(":"+os.Getenv("WEB_PORT"), nil))
-
+	if os.Getenv("APP_IS") == "monolith" {
+		log.Fatal(http.ListenAndServe(":"+os.Getenv("WEB_PORT"), utility.CSRF(mux)))
+	} else if os.Getenv("APP_IS") == "microservice" {
+		log.Fatal(http.ListenAndServe(":"+os.Getenv("WEB_PORT"), nil))
+	}
 }
 
 func cacheTemplates() *template.Template {
@@ -107,6 +120,7 @@ func cacheTemplates() *template.Template {
 func handler(w http.ResponseWriter, r *http.Request) {
 	router.Routes(w, r)
 }
+
 func columnNameReciever() {
 	// Get a list of tables in the database
 	tables, err := models.ListTables()
@@ -139,4 +153,51 @@ Application should now be accessible on port ` + os.Getenv("WEB_PORT") + `
 
 `
 	log.Println(logo)
+}
+
+func cacheInit() {
+	config := bigcache.Config{
+		// number of shards (must be a power of 2)
+		Shards: 1024,
+
+		// time after which entry can be evicted
+		LifeWindow: 10 * time.Minute,
+
+		// Interval between removing expired entries (clean up).
+		// If set to <= 0 then no action is performed.
+		// Setting to < 1 second is counterproductive — bigcache has a one second resolution.
+		CleanWindow: 5 * time.Minute,
+
+		// rps * lifeWindow, used only in initial memory allocation
+		MaxEntriesInWindow: 1000 * 10 * 60,
+
+		// max entry size in bytes, used only in initial memory allocation
+		MaxEntrySize: 500,
+
+		// prints information about additional memory allocation
+		Verbose: true,
+
+		// cache will not allocate more memory than this limit, value in MB
+		// if value is reached then the oldest entries can be overridden for the new ones
+		// 0 value means no size limit
+		HardMaxCacheSize: 512,
+
+		// callback fired when the oldest entry is removed because of its expiration time or no space left
+		// for the new entry, or because delete was called. A bitmask representing the reason will be returned.
+		// Default value is nil which means no callback and it prevents from unwrapping the oldest entry.
+		OnRemove: nil,
+
+		// OnRemoveWithReason is a callback fired when the oldest entry is removed because of its expiration time or no space left
+		// for the new entry, or because delete was called. A constant representing the reason will be passed through.
+		// Default value is nil which means no callback and it prevents from unwrapping the oldest entry.
+		// Ignored if OnRemove is specified.
+		OnRemoveWithReason: nil,
+	}
+
+	var err error
+
+	utility.Cache, err = bigcache.New(context.Background(), config)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

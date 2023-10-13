@@ -10,13 +10,14 @@ import (
 	"os"
 	"reflect"
 	"strconv"
-	"strings"
 
 	//"log"
 	//"fmt"
 	"html/template"
 	"net/http"
 
+	"github.com/allegro/bigcache/v3"
+	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 )
@@ -29,6 +30,12 @@ var Store *sessions.FilesystemStore
 
 // DB Connections
 var Db *sqlx.DB
+
+// Cache
+var Cache *bigcache.BigCache
+
+// CSRF
+var CSRF func(http.Handler) http.Handler
 
 type Session struct {
 	Key   string
@@ -75,25 +82,6 @@ func SessionGet(r *http.Request, key string) interface{} {
 	return session.Values[key]
 }
 
-func CheckACL(w http.ResponseWriter, r *http.Request, minLevel int) bool {
-	userType := SessionGet(r, "type")
-	var level int = 0
-	switch userType {
-	case "user":
-		level = 1
-	case "admin":
-		level = 2
-	default:
-		level = 0
-	}
-	if level >= minLevel {
-		return true
-	} else {
-		RedirectTo(w, r, "forbidden")
-		return false
-	}
-}
-
 func AddFlash(flavour string, message string, w http.ResponseWriter, r *http.Request) {
 	session, err := Store.Get(r, os.Getenv("SESSION_NAME"))
 	if err != nil {
@@ -132,6 +120,7 @@ func RenderTemplate(w http.ResponseWriter, r *http.Request, template string, dat
 	tmplData["data"] = data
 	tmplData["flash"] = viewFlash(w, r)
 	tmplData["session"] = session.Values["email"]
+	tmplData["csrf"] = csrf.TemplateField(r)
 	View.ExecuteTemplate(w, template, tmplData)
 }
 
@@ -300,7 +289,12 @@ func RenderTemplateData(w http.ResponseWriter, r *http.Request, template string,
 	View.ExecuteTemplate(w, template, tmplData)
 }
 
-func WriteColumnsToFile(file *os.File, columns []string) {
-	file.WriteString(strings.Join(columns, "\n"))
-	file.WriteString("\n")
+func StringInArray(target string, arr []string) bool {
+	// Can change to slices.Contain if we're targetting 1.21+
+	for _, s := range arr {
+		if s == target {
+			return true
+		}
+	}
+	return false
 }
