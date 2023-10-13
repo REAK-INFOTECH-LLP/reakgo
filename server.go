@@ -76,7 +76,7 @@ func main() {
 	if os.Getenv("APP_IS") == "monolith" {
 		log.Fatal(http.ListenAndServe(":"+os.Getenv("WEB_PORT"), utility.CSRF(mux)))
 	} else if os.Getenv("APP_IS") == "microservice" {
-		log.Fatal(http.ListenAndServe(":"+os.Getenv("WEB_PORT"), nil))
+		log.Fatal(http.ListenAndServe(":"+os.Getenv("WEB_PORT"), mux))
 	}
 }
 
