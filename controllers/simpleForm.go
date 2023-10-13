@@ -31,3 +31,6 @@ func ViewForm(w http.ResponseWriter, r *http.Request) {
 	}
 	utility.RenderTemplate(w, r, "viewForm", result)
 }
+func Test(w http.ResponseWriter, r *http.Request) {
+	log.Println("in controllers")
+}
