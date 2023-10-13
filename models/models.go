@@ -115,9 +115,15 @@ func Find(data map[string]interface{}, structure interface{}) error {
 	if colExists {
 		col, isStringSlice := colInterface.([]string)
 		if isStringSlice {
+			for _, colName := range col {
+				// Check if the value exists in the ColumnMap.
+				if _, ok := ColumnMap[colName]; !ok {
+					return errors.New("Column '" + colName + "' does not exist. Please check the column name.")
+				}
+			}
 			columns = col
 		} else {
-			return errors.New("provided column names are not found please check all the column name first")
+			return errors.New("showcolumn key having the wrong datatype .It should be []string")
 		}
 	} else {
 		columns = append(columns, "*")
