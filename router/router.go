@@ -1,7 +1,6 @@
 package router
 
 import (
-	"log"
 	"net/http"
 	"reakgo/controllers"
 	"strings"
@@ -37,9 +36,6 @@ func Routes(w http.ResponseWriter, r *http.Request) {
 	case "verify-2fa":
 		controllers.CheckACL(w, r, []string{"admin", "user"})
 		controllers.VerifyTwoFa(w, r)
-	case "test":
-		log.Println("in router")
-		controllers.Test(w, r)
 	}
 
 }
