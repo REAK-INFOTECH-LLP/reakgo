@@ -9,6 +9,8 @@ import (
 	"reakgo/utility"
 )
 
+var Utility utility.Helper
+
 var (
 	// ErrCode is a config or an internal error
 	ErrCode = errors.New("Case statement in code is not correct.")
@@ -34,12 +36,12 @@ func CheckACL(w http.ResponseWriter, r *http.Request, allowedAccess []string) bo
 	apiToken := r.Header.Get("Authorization")
 	if apiToken == "" {
 		// API Token not found, Switching to session based auth
-		userType := utility.SessionGet(r, "type")
+		userType := Utility.SessionGet(r, "type")
 		if userType == nil {
 			userType = "guest"
 		}
-		if !utility.StringInArray(fmt.Sprintf("%v", userType), allowedAccess) {
-			utility.RedirectTo(w, r, "forbidden")
+		if !Utility.StringInArray(fmt.Sprintf("%v", userType), allowedAccess) {
+			Utility.RedirectTo(w, r, "forbidden")
 			return false
 		}
 	} else {

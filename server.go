@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -62,7 +63,7 @@ func main() {
 	// Cache fail-safe is already implemented so will fetch from DB incase the cache is not populated
 	go models.GenerateCache()
 
-	utility.CSRF = csrf.Protect([]byte("v0kDIaHLy2TpHrumcl4Z0gpel8DpV9zo"))
+	utility.CSRF = csrf.Protect([]byte(os.Getenv("CSRF_SECRET_KEY")))
 
 	mux := mux.NewRouter()
 
@@ -137,6 +138,11 @@ Application should now be accessible on port ` + os.Getenv("WEB_PORT") + `
 }
 
 func cacheInit() {
+	token_cache_size, err := strconv.Atoi(os.Getenv("TOKEN_CACHE_SIZE"))
+	if err != nil {
+		// Set Standard Size in case we can't convert to int, or value is missing
+		token_cache_size = 500
+	}
 	config := bigcache.Config{
 		// number of shards (must be a power of 2)
 		Shards: 1024,
@@ -161,7 +167,7 @@ func cacheInit() {
 		// cache will not allocate more memory than this limit, value in MB
 		// if value is reached then the oldest entries can be overridden for the new ones
 		// 0 value means no size limit
-		HardMaxCacheSize: 512,
+		HardMaxCacheSize: token_cache_size,
 
 		// callback fired when the oldest entry is removed because of its expiration time or no space left
 		// for the new entry, or because delete was called. A bitmask representing the reason will be returned.
@@ -174,8 +180,6 @@ func cacheInit() {
 		// Ignored if OnRemove is specified.
 		OnRemoveWithReason: nil,
 	}
-
-	var err error
 
 	utility.Cache, err = bigcache.New(context.Background(), config)
 	if err != nil {

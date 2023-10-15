@@ -11,6 +11,8 @@ import (
 	"strings"
 )
 
+var Utility utility.Helper
+
 var (
 	// ErrCode is a config or an internal error
 	ErrCode = errors.New("Case statement in code is not correct.")
