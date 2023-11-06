@@ -37,4 +37,5 @@ func Routes(w http.ResponseWriter, r *http.Request) {
 		controllers.CheckACL(w, r, []string{"admin", "user"})
 		controllers.VerifyTwoFa(w, r)
 	}
+
 }

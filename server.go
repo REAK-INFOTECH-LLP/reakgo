@@ -50,6 +50,7 @@ func init() {
 	utility.Db.SetConnMaxLifetime(time.Minute * 3)
 	utility.Db.SetMaxOpenConns(10)
 	utility.Db.SetMaxIdleConns(10)
+	columnNameReciever()
 
 	gob.Register(utility.Flash{})
 
@@ -75,7 +76,7 @@ func main() {
 	if os.Getenv("APP_IS") == "monolith" {
 		log.Fatal(http.ListenAndServe(":"+os.Getenv("WEB_PORT"), utility.CSRF(mux)))
 	} else if os.Getenv("APP_IS") == "microservice" {
-		log.Fatal(http.ListenAndServe(":"+os.Getenv("WEB_PORT"), nil))
+		log.Fatal(http.ListenAndServe(":"+os.Getenv("WEB_PORT"), mux))
 	}
 }
 
@@ -118,6 +119,24 @@ func cacheTemplates() *template.Template {
 
 func handler(w http.ResponseWriter, r *http.Request) {
 	router.Routes(w, r)
+}
+
+func columnNameReciever() {
+	// Get a list of tables in the database
+	tables, err := models.ListTables()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	// Iterate through the tables and write column names to the output file
+	for _, table := range tables {
+		_, err := models.ListColumns(table)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+	}
 }
 
 func motd() {

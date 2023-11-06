@@ -11,11 +11,15 @@ import (
 )
 
 type Authentication struct {
-	Id             int32
-	Email          string
-	Password       string
-	Token          string
-	TokenTimestamp int64 `db:"tokenTimestamp"`
+	Id             int32  `db:"id"`
+	FirstName      string `db:"first_name"`
+	LastName       string `db:"last_name"`
+	Email          string `db:"email"`
+	Password       string `db:"password"`
+	Token          string `db:"token"`
+	TokenTimestamp int64  `db:"token_timestamp"`
+	Status         string `db:"status"`
+	Type           string `db:"type"`
 }
 
 type TwoFactor struct {
