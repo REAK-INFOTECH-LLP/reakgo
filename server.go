@@ -26,6 +26,27 @@ import (
 )
 
 func init() {
+
+    db_user := os.Getenv("DB_USER")
+    if(db_user == "") {
+        log.Fatal("Missing Env value DB_USER")
+    }
+    
+    db_password := os.Getenv("DB_PASSWORD")
+    if(db_user == "") {
+        log.Fatal("Missing Env value DB_PASSWORD")
+    }
+    
+    db_name := os.Getenv("DB_NAME")
+    if(db_user == "") {
+        log.Fatal("Missing Env value DB_NAME")
+    }
+
+    session_key := os.Getenv("SESSION_KEY")
+    if(db_user == "") {
+        log.Fatal("Missing Env value SESSION_KEY")
+    }
+
 	// Set log configuration
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	var err error
@@ -35,12 +56,12 @@ func init() {
 	}
 	motd()
 	// Read Config
-	utility.Db, err = sqlx.Open("mysql", os.Getenv("DB_USER")+":"+os.Getenv("DB_PASSWORD")+"@/"+os.Getenv("DB_NAME"))
+	utility.Db, err = sqlx.Open("mysql", db_user+":"+db_password+"@/"+db_name)
 	if err != nil {
 		log.Println("Wowza !, We didn't find the DB or you forgot to setup the env variables")
 		panic(err)
 	}
-	utility.Store = sessions.NewFilesystemStore("", []byte(os.Getenv("SESSION_KEY")))
+	utility.Store = sessions.NewFilesystemStore("", []byte(session_key))
 	utility.Store.Options = &sessions.Options{
 		Path:     "/",
 		MaxAge:   60 * 1,
@@ -58,13 +79,30 @@ func init() {
 }
 
 func main() {
-	// Initialize Caching
+	
+    csrf_secret_key := os.Getenv("CSRF_SECRET_KEY")
+    if(csrf_secret_key == "") {
+        log.Fatal("Missing Env value CSRF_SECRET_KEY")
+    }
+
+    app_is := os.Getenv("APP_IS")
+    if(app_is == "") {
+        log.Fatal("Missing Env value APP_IS")
+    }
+
+    web_port := os.Getenv("WEB_PORT")
+    if(app_is == "") {
+        log.Fatal("Missing Env value WEB_PORT")
+    }
+
+
+    // Initialize Caching
 	cacheInit()
 	// Generate cache as a go routine as to not halt operation,
 	// Cache fail-safe is already implemented so will fetch from DB incase the cache is not populated
 	go models.GenerateCache()
 
-	utility.CSRF = csrf.Protect([]byte(os.Getenv("CSRF_SECRET_KEY")))
+	utility.CSRF = csrf.Protect([]byte(csrf_secret_key))
 
 	mux := mux.NewRouter()
 
@@ -74,10 +112,10 @@ func main() {
 	staticHandler := http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/")))
 	mux.PathPrefix("/assets/").Handler(staticHandler)
 
-	if os.Getenv("APP_IS") == "monolith" {
-		log.Fatal(http.ListenAndServe(":"+os.Getenv("WEB_PORT"), utility.CSRF(mux)))
-	} else if os.Getenv("APP_IS") == "microservice" {
-		log.Fatal(http.ListenAndServe(":"+os.Getenv("WEB_PORT"), mux))
+	if app_is == "monolith" {
+		log.Fatal(http.ListenAndServe(":"+web_port, utility.CSRF(mux)))
+	} else if app_is == "microservice" {
+		log.Fatal(http.ListenAndServe(":"+web_port, mux))
 	}
 }
 
@@ -157,6 +195,7 @@ Application should now be accessible on port ` + os.Getenv("WEB_PORT") + `
 }
 
 func cacheInit() {
+
 	token_cache_size, err := strconv.Atoi(os.Getenv("TOKEN_CACHE_SIZE"))
 	if err != nil {
 		// Set Standard Size in case we can't convert to int, or value is missing
