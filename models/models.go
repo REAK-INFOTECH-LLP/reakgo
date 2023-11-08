@@ -12,7 +12,10 @@ import (
 	"strings"
 )
 
+var Utility utility.Helper
+
 var ColumnMap = make(map[string]string)
+
 var (
 	// ErrCode is a config or an internal error
 	ErrCode = errors.New("Case statement in code is not correct.")

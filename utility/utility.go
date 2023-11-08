@@ -47,6 +47,24 @@ type Flash struct {
 	Message string
 }
 
+type Helper interface {
+	GenerateRandomString(n int) (string, error)
+	RedirectTo(w http.ResponseWriter, r *http.Request, path string)
+	SessionGet(r *http.Request, key string) interface{}
+	SessionSet(w http.ResponseWriter, r *http.Request, data Session)
+	AddFlash(flavour string, message string, w http.ResponseWriter, r *http.Request)
+	viewFlash(w http.ResponseWriter, r *http.Request) interface{}
+	RenderTemplate(w http.ResponseWriter, r *http.Request, template string, data interface{})
+	ParseDataFromPostRequestToMap(r *http.Request) (map[string]interface{}, error)
+	ParseDataFromJsonToMap(r *http.Request) (map[string]interface{}, error)
+	StrictParseDataFromJson(r *http.Request, structure interface{}) error
+	StrictParseDataFromPostRequest(r *http.Request, structure interface{}) error
+	RenderJsonResponse(w http.ResponseWriter, r *http.Request, data interface{})
+	RenderTemplateData(w http.ResponseWriter, r *http.Request, template string, data interface{})
+	StringInArray(target string, arr []string) bool
+	ReturnUserDetails(r *http.Request, user interface{}) error
+}
+
 func GenerateRandomString(n int) (string, error) {
 	const letters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-"
 	ret := make([]byte, n)
