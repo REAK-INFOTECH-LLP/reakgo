@@ -1,5 +1,18 @@
 # reakgo
+
+
 Simple Framework to quickly build webapps in GoLang
+
+## Running the App
+
+Install gin
+
+`go install github.com/codegangsta/gin@latest`
+
+and run
+
+`gin run server.go`
+
 ## Struct srtickly according to db schema
 
 `MyStruct` is a struct representing a database table schema`(required)`, designed to work seamlessly with an Object-Relational Mapping (ORM) system. It strictly adheres to the database schema, ensuring that only fields corresponding to the database columns are included in the struct. Additionally, it uses struct tags, including `primaryKey:"true"`, to provide metadata for the ORM's functionality.
