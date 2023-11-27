@@ -108,11 +108,11 @@ func main() {
 
 	mux := mux.NewRouter()
 
-	mux.PathPrefix("/").HandlerFunc(handler)
-
 	// Serve static assets
     staticHandler := http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/")))
     mux.PathPrefix("/assets/").Handler(staticHandler)
+
+	mux.PathPrefix("/").HandlerFunc(handler)
 
 	if app_is == "monolith" {
 		log.Fatal(http.ListenAndServe(":"+web_port, utility.CSRF(mux)))
