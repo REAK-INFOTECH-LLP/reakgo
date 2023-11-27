@@ -27,7 +27,16 @@ import (
 
 func init() {
 
+	// Set log configuration
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	var err error
+	err = godotenv.Load()
+	if err != nil {
+		log.Println(".env file wasn't found, looking at env variables")
+	}
+
     db_user := os.Getenv("DB_USER")
+    print(db_user)
     if(db_user == "") {
         log.Fatal("Missing Env value DB_USER")
     }
@@ -47,13 +56,6 @@ func init() {
         log.Fatal("Missing Env value SESSION_KEY")
     }
 
-	// Set log configuration
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	var err error
-	err = godotenv.Load()
-	if err != nil {
-		log.Println(".env file wasn't found, looking at env variables")
-	}
 	motd()
 	// Read Config
 	utility.Db, err = sqlx.Open("mysql", db_user+":"+db_password+"@/"+db_name)
@@ -106,11 +108,11 @@ func main() {
 
 	mux := mux.NewRouter()
 
-	mux.PathPrefix("/").HandlerFunc(handler)
-
 	// Serve static assets
-	staticHandler := http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/")))
-	mux.PathPrefix("/assets/").Handler(staticHandler)
+    staticHandler := http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/")))
+    mux.PathPrefix("/assets/").Handler(staticHandler)
+
+	mux.PathPrefix("/").HandlerFunc(handler)
 
 	if app_is == "monolith" {
 		log.Fatal(http.ListenAndServe(":"+web_port, utility.CSRF(mux)))

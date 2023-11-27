@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"reakgo/utility"
 	"reflect"
 	"strings"
+    "reakgo/utility"
 )
 
-var Utility utility.Helper
+var Helper utility.Helper = &utility.Utility{}
 
 var ColumnMap = make(map[string]string)
 

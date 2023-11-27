@@ -9,7 +9,7 @@ import (
 	"reakgo/utility"
 )
 
-var Utility utility.Helper
+var Helper utility.Helper = &utility.Utility{}
 
 var (
 	// ErrCode is a config or an internal error
@@ -36,12 +36,12 @@ func CheckACL(w http.ResponseWriter, r *http.Request, allowedAccess []string) bo
 	apiToken := r.Header.Get("Authorization")
 	if apiToken == "" {
 		// API Token not found, Switching to session based auth
-		userType := Utility.SessionGet(r, "type")
+		userType := Helper.SessionGet(r, "type")
 		if userType == nil {
 			userType = "guest"
 		}
-		if !Utility.StringInArray(fmt.Sprintf("%v", userType), allowedAccess) {
-			Utility.RedirectTo(w, r, "forbidden")
+		if !Helper.StringInArray(fmt.Sprintf("%v", userType), allowedAccess) {
+            Helper.RedirectTo(w, r, "forbidden")
 			return false
 		}
 	} else {

@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 	"reakgo/models"
-	"reakgo/utility"
 )
 
 func AddForm(w http.ResponseWriter, r *http.Request) {
@@ -21,7 +20,7 @@ func AddForm(w http.ResponseWriter, r *http.Request) {
 			models.FormAddView{}.Add(name, address)
 		}
 	}
-	utility.RenderTemplate(w, r, "addForm", nil)
+	Helper.RenderTemplate(w, r, "addForm", nil)
 }
 
 func ViewForm(w http.ResponseWriter, r *http.Request) {
@@ -29,5 +28,5 @@ func ViewForm(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-	utility.RenderTemplate(w, r, "viewForm", result)
+	Helper.RenderTemplate(w, r, "viewForm", result)
 }

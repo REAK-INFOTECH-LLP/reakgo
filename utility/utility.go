@@ -47,13 +47,15 @@ type Flash struct {
 	Message string
 }
 
+type Utility struct {}
+
 type Helper interface {
 	GenerateRandomString(n int) (string, error)
 	RedirectTo(w http.ResponseWriter, r *http.Request, path string)
 	SessionGet(r *http.Request, key string) interface{}
 	SessionSet(w http.ResponseWriter, r *http.Request, data Session)
 	AddFlash(flavour string, message string, w http.ResponseWriter, r *http.Request)
-	viewFlash(w http.ResponseWriter, r *http.Request) interface{}
+	ViewFlash(w http.ResponseWriter, r *http.Request) interface{}
 	RenderTemplate(w http.ResponseWriter, r *http.Request, template string, data interface{})
 	ParseDataFromPostRequestToMap(r *http.Request) (map[string]interface{}, error)
 	ParseDataFromJsonToMap(r *http.Request) (map[string]interface{}, error)
@@ -62,10 +64,9 @@ type Helper interface {
 	RenderJsonResponse(w http.ResponseWriter, r *http.Request, data interface{})
 	RenderTemplateData(w http.ResponseWriter, r *http.Request, template string, data interface{})
 	StringInArray(target string, arr []string) bool
-	ReturnUserDetails(r *http.Request, user interface{}) error
 }
 
-func GenerateRandomString(n int) (string, error) {
+func (u* Utility) GenerateRandomString(n int) (string, error) {
 	const letters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-"
 	ret := make([]byte, n)
 	for i := 0; i < n; i++ {
@@ -79,11 +80,11 @@ func GenerateRandomString(n int) (string, error) {
 	return string(ret), nil
 }
 
-func RedirectTo(w http.ResponseWriter, r *http.Request, path string) {
+func (u* Utility) RedirectTo(w http.ResponseWriter, r *http.Request, path string) {
 	http.Redirect(w, r, os.Getenv("APP_URL")+"/"+path, http.StatusFound)
 }
 
-func SessionSet(w http.ResponseWriter, r *http.Request, data Session) {
+func (u* Utility) SessionSet(w http.ResponseWriter, r *http.Request, data Session) {
 	session, _ := Store.Get(r, os.Getenv("SESSION_NAME"))
 	// Set some session values.
 	session.Values[data.Key] = data.Value
@@ -94,13 +95,13 @@ func SessionSet(w http.ResponseWriter, r *http.Request, data Session) {
 	}
 }
 
-func SessionGet(r *http.Request, key string) interface{} {
+func (u* Utility) SessionGet(r *http.Request, key string) interface{} {
 	session, _ := Store.Get(r, os.Getenv("SESSION_NAME"))
 	// Set some session values.
 	return session.Values[key]
 }
 
-func AddFlash(flavour string, message string, w http.ResponseWriter, r *http.Request) {
+func (u* Utility) AddFlash(flavour string, message string, w http.ResponseWriter, r *http.Request) {
 	session, err := Store.Get(r, os.Getenv("SESSION_NAME"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -119,7 +120,7 @@ func AddFlash(flavour string, message string, w http.ResponseWriter, r *http.Req
 	}
 }
 
-func viewFlash(w http.ResponseWriter, r *http.Request) interface{} {
+func (u* Utility) ViewFlash(w http.ResponseWriter, r *http.Request) interface{} {
 	session, err := Store.Get(r, os.Getenv("SESSION_NAME"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -132,17 +133,17 @@ func viewFlash(w http.ResponseWriter, r *http.Request) interface{} {
 	return fm
 }
 
-func RenderTemplate(w http.ResponseWriter, r *http.Request, template string, data interface{}) {
+func (u* Utility) RenderTemplate(w http.ResponseWriter, r *http.Request, template string, data interface{}) {
 	session, _ := Store.Get(r, os.Getenv("SESSION_NAME"))
 	tmplData := make(map[string]interface{})
 	tmplData["data"] = data
-	tmplData["flash"] = viewFlash(w, r)
+	tmplData["flash"] = u.ViewFlash(w, r)
 	tmplData["session"] = session.Values["email"]
 	tmplData["csrf"] = csrf.TemplateField(r)
 	View.ExecuteTemplate(w, template, tmplData)
 }
 
-func ParseDataFromPostRequestToMap(r *http.Request) (map[string]interface{}, error) {
+func (u* Utility) ParseDataFromPostRequestToMap(r *http.Request) (map[string]interface{}, error) {
 	formData := make(map[string]interface{})
 	err := r.ParseForm()
 	if err != nil {
@@ -163,7 +164,7 @@ func ParseDataFromPostRequestToMap(r *http.Request) (map[string]interface{}, err
 	return formData, nil
 }
 
-func ParseDataFromJsonToMap(r *http.Request) (map[string]interface{}, error) {
+func (u* Utility) ParseDataFromJsonToMap(r *http.Request) (map[string]interface{}, error) {
 	var jsonDataMap map[string]interface{}
 	result := make(map[string]interface{})
 
@@ -184,7 +185,7 @@ func ParseDataFromJsonToMap(r *http.Request) (map[string]interface{}, error) {
 	return result, nil
 }
 
-func StrictParseDataFromJson(r *http.Request, structure interface{}) error {
+func (u* Utility) StrictParseDataFromJson(r *http.Request, structure interface{}) error {
 	err := json.NewDecoder(r.Body).Decode(structure)
 	if err != nil {
 		return err
@@ -193,7 +194,7 @@ func StrictParseDataFromJson(r *http.Request, structure interface{}) error {
 
 }
 
-func StrictParseDataFromPostRequest(r *http.Request, structure interface{}) error {
+func (u* Utility) StrictParseDataFromPostRequest(r *http.Request, structure interface{}) error {
 	err := r.ParseForm()
 	if err != nil {
 		return err
@@ -286,7 +287,7 @@ func StrictParseDataFromPostRequest(r *http.Request, structure interface{}) erro
 	return err
 
 }
-func RenderJsonResponse(w http.ResponseWriter, r *http.Request, data interface{}) {
+func (u* Utility) RenderJsonResponse(w http.ResponseWriter, r *http.Request, data interface{}) {
 	jsonresponce, err := json.Marshal(data)
 	if err != nil {
 		log.Println(err)
@@ -298,16 +299,16 @@ func RenderJsonResponse(w http.ResponseWriter, r *http.Request, data interface{}
 	w.Write([]byte(jsonresponce))
 }
 
-func RenderTemplateData(w http.ResponseWriter, r *http.Request, template string, data interface{}) {
+func (u* Utility) RenderTemplateData(w http.ResponseWriter, r *http.Request, template string, data interface{}) {
 	session, _ := Store.Get(r, os.Getenv("SESSION_NAME"))
 	tmplData := make(map[string]interface{})
 	tmplData["data"] = data
-	tmplData["flash"] = viewFlash(w, r)
+	tmplData["flash"] = u.ViewFlash(w, r)
 	tmplData["session"] = session.Values["email"]
 	View.ExecuteTemplate(w, template, tmplData)
 }
 
-func StringInArray(target string, arr []string) bool {
+func (u* Utility) StringInArray(target string, arr []string) bool {
 	// Can change to slices.Contain if we're targetting 1.21+
 	for _, s := range arr {
 		if s == target {
