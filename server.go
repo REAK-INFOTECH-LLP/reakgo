@@ -23,7 +23,18 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
+
+	socketio "github.com/googollee/go-socket.io"
+	"github.com/googollee/go-socket.io/engineio"
+	"github.com/googollee/go-socket.io/engineio/transport"
+	"github.com/googollee/go-socket.io/engineio/transport/polling"
+	"github.com/googollee/go-socket.io/engineio/transport/websocket"
 )
+
+// Easier to get running with CORS. Thanks for help @Vindexus and @erkie
+var allowOriginFunc = func(r *http.Request) bool {
+	return true
+}
 
 func init() {
 
@@ -35,26 +46,26 @@ func init() {
 		log.Println(".env file wasn't found, looking at env variables")
 	}
 
-    db_user := os.Getenv("DB_USER")
-    print(db_user)
-    if(db_user == "") {
-        log.Fatal("Missing Env value DB_USER")
-    }
-    
-    db_password := os.Getenv("DB_PASSWORD")
-    if(db_user == "") {
-        log.Fatal("Missing Env value DB_PASSWORD")
-    }
-    
-    db_name := os.Getenv("DB_NAME")
-    if(db_user == "") {
-        log.Fatal("Missing Env value DB_NAME")
-    }
+	db_user := os.Getenv("DB_USER")
+	print(db_user)
+	if db_user == "" {
+		log.Fatal("Missing Env value DB_USER")
+	}
 
-    session_key := os.Getenv("SESSION_KEY")
-    if(db_user == "") {
-        log.Fatal("Missing Env value SESSION_KEY")
-    }
+	db_password := os.Getenv("DB_PASSWORD")
+	if db_user == "" {
+		log.Fatal("Missing Env value DB_PASSWORD")
+	}
+
+	db_name := os.Getenv("DB_NAME")
+	if db_user == "" {
+		log.Fatal("Missing Env value DB_NAME")
+	}
+
+	session_key := os.Getenv("SESSION_KEY")
+	if db_user == "" {
+		log.Fatal("Missing Env value SESSION_KEY")
+	}
 
 	motd()
 	// Read Config
@@ -81,24 +92,23 @@ func init() {
 }
 
 func main() {
-	
-    csrf_secret_key := os.Getenv("CSRF_SECRET_KEY")
-    if(csrf_secret_key == "") {
-        log.Fatal("Missing Env value CSRF_SECRET_KEY")
-    }
 
-    app_is := os.Getenv("APP_IS")
-    if(app_is == "") {
-        log.Fatal("Missing Env value APP_IS")
-    }
+	csrf_secret_key := os.Getenv("CSRF_SECRET_KEY")
+	if csrf_secret_key == "" {
+		log.Fatal("Missing Env value CSRF_SECRET_KEY")
+	}
 
-    web_port := os.Getenv("WEB_PORT")
-    if(app_is == "") {
-        log.Fatal("Missing Env value WEB_PORT")
-    }
+	app_is := os.Getenv("APP_IS")
+	if app_is == "" {
+		log.Fatal("Missing Env value APP_IS")
+	}
 
+	web_port := os.Getenv("WEB_PORT")
+	if app_is == "" {
+		log.Fatal("Missing Env value WEB_PORT")
+	}
 
-    // Initialize Caching
+	// Initialize Caching
 	cacheInit()
 	// Generate cache as a go routine as to not halt operation,
 	// Cache fail-safe is already implemented so will fetch from DB incase the cache is not populated
@@ -108,9 +118,62 @@ func main() {
 
 	mux := mux.NewRouter()
 
+	// Socket IO Handler
+
+	socketioHandler := socketio.NewServer(&engineio.Options{
+		Transports: []transport.Transport{
+			&polling.Transport{
+				CheckOrigin: allowOriginFunc,
+			},
+			&websocket.Transport{
+				CheckOrigin: allowOriginFunc,
+			},
+		},
+	})
+
+	socketioHandler.OnConnect("/", func(s socketio.Conn) error {
+		s.SetContext("")
+		log.Println("connected:", s.ID())
+		return nil
+	})
+
+	socketioHandler.OnEvent("/", "notice", func(s socketio.Conn, msg string) {
+		log.Println("notice:", msg)
+		s.Emit("reply", "have "+msg)
+	})
+
+	socketioHandler.OnEvent("/chat", "msg", func(s socketio.Conn, msg string) string {
+		log.Println("chat:", msg)
+		s.SetContext(msg)
+		return "recv " + msg
+	})
+
+	socketioHandler.OnEvent("/", "bye", func(s socketio.Conn) string {
+		last := s.Context().(string)
+		s.Emit("bye", last)
+		s.Close()
+		return last
+	})
+
+	socketioHandler.OnError("/", func(s socketio.Conn, e error) {
+		log.Println("meet error:", e)
+	})
+
+	socketioHandler.OnDisconnect("/", func(s socketio.Conn, reason string) {
+		log.Println("closed", reason)
+	})
+
+	go func() {
+		if err := socketioHandler.Serve(); err != nil {
+			log.Fatalf("socketio listen error: %s\n", err)
+		}
+	}()
+	defer socketioHandler.Close()
+
 	// Serve static assets
-    staticHandler := http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/")))
-    mux.PathPrefix("/assets/").Handler(staticHandler)
+	staticHandler := http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/")))
+	mux.PathPrefix("/assets/").Handler(staticHandler)
+	mux.PathPrefix("/socket.io/").Handler(socketioHandler)
 
 	mux.PathPrefix("/").HandlerFunc(handler)
 
