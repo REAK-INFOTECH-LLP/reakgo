@@ -11,7 +11,7 @@ Install gin
 
 and run
 
-`gin run server.go`
+`go run server.go`
 
 ## Struct srtickly according to db schema
 
